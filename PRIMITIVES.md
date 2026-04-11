@@ -88,6 +88,20 @@ If this is true, then the analog/digital distinction is not a boundary between t
 
 ---
 
+## The Duality
+
+These primitives are not a taxonomy to examine from outside. They are environments you inhabit, and they are the data you process from within those environments. The primitive names the environment. The environment instantiates the primitive. There is no gap between them.
+
+This is the lambda concept from Lisp: data and procedure are the same thing. D ≅ D^D. Every element of the domain is both a point and a function on the domain. To think "property" is to already be inside the enclosure. The enclosure is itself a thought.
+
+See [DUALITY.md](DUALITY.md) for the full treatment. The loop closes there.
+
+## The Rotation
+
+The dualities are not oppositions — not endpoints on a line that oscillates between them. They are angular positions on a cycle. Scarcity and abundance are phases: θ = 0 and θ = π. The system rotates through the full circle, carrying the holonomy of previous traversals. What looks like oscillation from within the linear temporal dimension (djet) is rotation in the angular dimension (neheh).
+
+See [TEMPORAL.md](TEMPORAL.md) for the polar-time framework.
+
 ## What Comes Next
 
 Each primitive needs a full treatment: its history, its transformation in the current transition, its expression through each of the four epistemologies, and its implications for the post-abundance order. That is the work of this project.

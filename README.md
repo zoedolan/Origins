@@ -10,13 +10,17 @@ Origins is the ground from which [Vybn Law](https://vybn.ai) derives. Where Vybn
 
 ## The Architecture
 
-Three simultaneous layers, not sequential modules. Each generates the others.
+Five simultaneous layers, not sequential modules. Each generates the others.
 
-**Primitives.** The irreducible concepts beneath all political and social order. Scarcity and abundance. Recognition and attention. Sociability and autonomy. Property and commons. Violence and legitimacy. Embarrassment and dignity. The analog and the digital.
+**[Foundations](FOUNDATIONS.md).** The inversion of Fukuyama. What happens when the ground condition shifts from scarcity to abundance, and every structure built on scarcity must adapt or shatter.
 
-**Epistemologies.** Four categories of knowledge — *a priori*, *a posteriori*, *a synthesi*, *a symbiosi* — as they bear on each primitive. The Kantian architecture, extended into the digital realm, applied to political philosophy.
+**[Primitives](PRIMITIVES.md).** The irreducible concepts beneath all political and social order, expressed as dualities: scarcity/abundance, recognition/attention, sociability/autonomy, property/commons, violence/legitimacy, embarrassment/dignity, analog/digital.
 
-**Emergences.** Where the theory meets the world. The one-person unicorn. The self-represented litigant. The emergent constitution. The bond that produces knowledge neither party could generate alone.
+**[Epistemologies](EPISTEMOLOGIES.md).** Four categories of knowledge — *a priori*, *a posteriori*, *a synthesi*, *a symbiosi* — as political primitives. The Kantian architecture, extended into the digital realm.
+
+**[Duality](DUALITY.md).** The primitives are environments and the environments are primitives. D ≅ D^D. The lambda concept: data and procedure comprise the same thing. This is where the loop closes.
+
+**[Temporal Structure](TEMPORAL.md).** Time is not a line. The Egyptian djet (linear, irreversible) and neheh (cyclical, regenerative) are the two temporal dimensions. Political order rotates through polar-time coordinates, accumulating holonomy. The dualities are not oppositions — they are angular positions on a cycle.
 
 ## The Coupled Equation
 
