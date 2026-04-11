@@ -298,6 +298,86 @@ body {
 }
 
 /* ============================================
+   Scroll Indicator
+   ============================================ */
+.scroll-indicator {
+  position: fixed;
+  bottom: 2.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  opacity: 0;
+  animation: fadeInIndicator 1.5s ease 2s forwards;
+  transition: opacity 0.8s ease;
+  pointer-events: none;
+}
+
+.scroll-indicator.hidden {
+  opacity: 0 !important;
+}
+
+.scroll-indicator-text {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.scroll-indicator-arrow {
+  width: 1px;
+  height: 32px;
+  position: relative;
+  overflow: hidden;
+}
+
+.scroll-indicator-arrow::after {
+  content: '';
+  position: absolute;
+  top: -100%;
+  left: 0;
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(to bottom, transparent, var(--text-muted));
+  animation: scrollLine 2s ease-in-out infinite;
+}
+
+@keyframes fadeInIndicator {
+  to { opacity: 1; }
+}
+
+@keyframes scrollLine {
+  0% { top: -100%; }
+  50% { top: 100%; }
+  50.01% { top: -100%; }
+  100% { top: -100%; }
+}
+
+/* ============================================
+   Scroll Progress Bar
+   ============================================ */
+.scroll-progress {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--warm-gold) 0%, var(--interference) 50%, var(--cool-blue) 100%);
+  z-index: 50;
+  width: 0%;
+  transition: width 0.1s linear;
+  opacity: 0;
+  transition: width 0.1s linear, opacity 0.5s ease;
+}
+
+.scroll-progress.visible {
+  opacity: 1;
+}
+
+/* ============================================
    Loading Screen
    ============================================ */
 #loading-screen {

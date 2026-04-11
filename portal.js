@@ -303,6 +303,25 @@ function onScroll() {
       break;
     }
   }
+  
+  // Hide scroll indicator after first scroll
+  var indicator = document.getElementById('scroll-indicator');
+  if (indicator && scrollVh > 10) {
+    indicator.classList.add('hidden');
+  } else if (indicator && scrollVh <= 5) {
+    indicator.classList.remove('hidden');
+  }
+  
+  // Update progress bar
+  var progressBar = document.getElementById('scroll-progress');
+  if (progressBar) {
+    progressBar.style.width = (scrollProgress * 100) + '%';
+    if (scrollVh > 10) {
+      progressBar.classList.add('visible');
+    } else {
+      progressBar.classList.remove('visible');
+    }
+  }
 }
 
 // ============================================
@@ -342,16 +361,13 @@ function updateSectionBehaviors(dt) {
 
 // --- Section 0: Entry ---
 function updateEntry(sp, dt) {
-  // Two distant fields drifting closer as user scrolls
-  const isMobile = window.innerWidth < 768;
-  const maxSep = isMobile ? 3 : 6;
-  const minSep = isMobile ? 1 : 2;
-  const separation = maxSep - sp * (maxSep - minSep);
+  // Two distant fields drifting closer as user scrolls — faster convergence
+  const separation = 6 - sp * 5; // 6 → 1 by end of entry
   organicField.centerX = -separation / 2;
   digitalField.centerX = separation / 2;
   
-  // Interference begins as fields approach
-  interferenceField.couplingStrength = Math.max(0, sp - 0.5) * 2; // 0 → 1 in second half
+  // Interference begins earlier for quicker visual feedback
+  interferenceField.couplingStrength = Math.max(0, sp - 0.3) * 1.4; // starts at 30% scroll
   
   // Camera stays centered
   camera.position.x = 0;
