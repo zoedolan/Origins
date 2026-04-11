@@ -747,6 +747,15 @@ html[data-theme] * {
   letter-spacing: 0.02em;
 }
 
+.equation-gloss {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  font-style: italic;
+  color: var(--color-text-muted);
+  margin-top: var(--space-4);
+  line-height: 1.6;
+}
+
 .footer-quote {
   margin-bottom: var(--space-10);
   border-left: none;
@@ -864,6 +873,7 @@ html[data-theme] * {
     width: 260px;
     background: var(--color-bg);
     box-shadow: var(--shadow-md);
+    padding-top: var(--space-16);
   }
 
   .sidebar.open {

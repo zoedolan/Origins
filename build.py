@@ -99,68 +99,67 @@ def style_equations(html):
 
 
 def wrap_pull_quotes(html):
-    """Find pull quote passages and wrap them in blockquote.pullquote."""
+    """Find pull quote passages and wrap them in blockquote.pullquote.
+    
+    Strategy: find the <p> that contains the quote, extract the full paragraph,
+    and insert a pullquote blockquote between the preceding and following text.
+    """
     for quote in PULL_QUOTES:
         escaped = re.escape(quote)
-        
-        # Try: find it as italic text
-        pattern_italic = re.compile(
-            r'<em>(?:["\u201c])?' + escaped + r'(?:["\u201d])?</em>',
-            re.IGNORECASE
-        )
-        match = pattern_italic.search(html)
-        if match:
-            original = match.group(0)
-            pos = html.find(original)
-            before = html[max(0, pos-200):pos]
-            if 'class="pullquote"' not in before:
-                html = html.replace(
-                    original,
-                    f'</p><blockquote class="pullquote"><p>{original}</p></blockquote><p>',
-                    1
-                )
+        pattern = re.compile(escaped, re.IGNORECASE)
+        match = pattern.search(html)
+        if not match:
             continue
         
-        # Try: find it in the HTML (possibly with smart quotes)
-        pattern_text = re.compile(escaped, re.IGNORECASE)
-        match = pattern_text.search(html)
-        if match:
-            original = match.group(0)
-            pos = html.find(original)
-            if pos != -1:
-                before = html[max(0, pos-200):pos]
-                if 'class="pullquote"' not in before:
-                    html = html.replace(
-                        original,
-                        f'</p><blockquote class="pullquote"><p>{original}</p></blockquote><p>',
-                        1
-                    )
+        pos = match.start()
+        # Check if already inside a pullquote
+        before_context = html[max(0, pos-300):pos]
+        if 'class="pullquote"' in before_context:
+            continue
+        
+        # Find the enclosing <p> tag
+        p_start = html.rfind('<p', 0, pos)
+        p_end_tag = html.find('</p>', pos)
+        if p_start == -1 or p_end_tag == -1:
+            continue
+        p_end = p_end_tag + 4
+        
+        full_paragraph = html[p_start:p_end]
+        matched_text = match.group(0)
+        
+        # Create a clean pullquote version of just the matched text
+        # Strip any surrounding HTML tags for the display version
+        display_text = matched_text
+        
+        # Build the pullquote as a separate block between paragraphs
+        # Split the paragraph at the quote
+        before_quote = html[p_start:match.start()]
+        after_quote = html[match.end():p_end]
+        
+        # Clean up the before/after to form valid paragraphs
+        # Remove trailing opening quotes, spaces, colons
+        before_clean = re.sub(r'[\s:]*(?:<em>)?(?:["\u201c]|&ldquo;)?\s*$', '', before_quote)
+        # Close any open tags
+        if not before_clean.endswith('</p>'):
+            before_clean += '</p>'
+        
+        # Clean up after text - remove leading closing quotes, spaces
+        after_clean = re.sub(r'^\s*(?:["\u201d]|&rdquo;)?(?:</em>)?[\s.]*', '', after_quote)
+        # Ensure it starts with <p>
+        if after_clean and not after_clean.startswith('<p'):
+            after_clean = '<p>' + after_clean
+        if after_clean and not after_clean.endswith('</p>'):
+            pass  # it should already end with </p> from the original
+        
+        pullquote_html = f'<blockquote class="pullquote"><p>{display_text}</p></blockquote>'
+        
+        replacement = f'{before_clean}\n{pullquote_html}\n{after_clean}'
+        html = html[:p_start] + replacement + html[p_end:]
     
-    # Also try smart-quote versions
-    smart_quotes = {
-        "using pigments of evidence to paint a case.": [
-            "&ldquo;using pigments of evidence to paint a case.&rdquo;",
-            "\u201cusing pigments of evidence to paint a case.\u201d",
-        ],
-        "the digital realm inheres in the fabric of the universe.": [
-            "&ldquo;The digital realm inheres in the fabric of the universe.&rdquo;",
-        ],
-    }
-    
-    for quote, variants in smart_quotes.items():
-        for variant in variants:
-            if variant in html:
-                pos = html.find(variant)
-                before = html[max(0, pos-200):pos]
-                if 'class="pullquote"' not in before:
-                    html = html.replace(
-                        variant,
-                        f'</p><blockquote class="pullquote"><p>{variant}</p></blockquote><p>',
-                        1
-                    )
-    
-    # Clean up empty paragraphs created by the splitting
+    # Clean up empty paragraphs
     html = re.sub(r'<p>\s*</p>', '', html)
+    # Clean up paragraphs with just punctuation
+    html = re.sub(r'<p>\s*[.\s]*</p>', '', html)
     return html
 
 
@@ -294,11 +293,13 @@ def build_page():
         <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
     </button>
 
+    <!-- Hamburger (outside sidebar so it stays visible when sidebar is hidden) -->
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+
     <!-- Navigation sidebar -->
     <nav class="sidebar" id="sidebar" aria-label="Chapter navigation">
-        <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
-            <span></span><span></span><span></span>
-        </button>
         <div class="sidebar-inner">
             <a href="#hero" class="nav-logo">Origins</a>
             {nav_html}
