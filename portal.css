@@ -1,0 +1,397 @@
+/* ============================================
+   Origins Portal — Styles
+   ============================================ */
+
+/* Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #0a0a0f;
+  --warm-gold: #D4A574;
+  --warm-amber: #C2724F;
+  --warm-red: #8B3A3A;
+  --warm-wheat: #F5DEB3;
+  --cool-blue: #4A90D9;
+  --cool-ice: #A8C8E8;
+  --cool-silver: #E8E8F0;
+  --cool-white: #FFFFFF;
+  --interference: #C9A86C;
+  --text-color: #E8E8E8;
+  --text-muted: #8a8a9a;
+  --font-serif: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: auto; /* GSAP handles scroll */
+}
+
+body {
+  background: var(--bg);
+  color: var(--text-color);
+  font-family: var(--font-serif);
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* ============================================
+   Canvas — fixed behind everything
+   ============================================ */
+#portal-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  display: block;
+}
+
+/* ============================================
+   Scroll Container
+   ============================================ */
+#scroll-container {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+
+#scroll-container a,
+#scroll-container button,
+#scroll-container [role="link"],
+#scroll-container [role="button"] {
+  pointer-events: auto;
+}
+
+.portal-section {
+  position: relative;
+  width: 100%;
+}
+
+.section-spacer {
+  width: 100%;
+}
+
+/* ============================================
+   Text Overlays — fixed to viewport
+   ============================================ */
+.text-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.text-overlay.visible {
+  opacity: 1;
+}
+
+.text-overlay p {
+  font-family: var(--font-serif);
+  font-size: clamp(1.125rem, 1rem + 1vw, 1.75rem);
+  line-height: 1.65;
+  color: var(--text-color);
+  text-shadow:
+    0 0 40px rgba(10, 10, 15, 0.95),
+    0 0 80px rgba(10, 10, 15, 0.8),
+    0 2px 4px rgba(0, 0, 0, 0.9);
+  max-width: 700px;
+  padding: 0 1.5rem;
+}
+
+.text-overlay em {
+  font-style: italic;
+  color: var(--warm-wheat);
+}
+
+/* ============================================
+   Section 0: Entry text
+   ============================================ */
+.entry-title {
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.entry-title h1 {
+  font-family: var(--font-serif);
+  font-size: clamp(2.5rem, 2rem + 3vw, 5rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-color);
+  text-shadow:
+    0 0 60px rgba(10, 10, 15, 0.95),
+    0 0 120px rgba(10, 10, 15, 0.8);
+}
+
+.entry-subtitle {
+  font-family: var(--font-sans) !important;
+  font-size: clamp(0.85rem, 0.7rem + 0.5vw, 1.1rem) !important;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted) !important;
+}
+
+/* ============================================
+   Section 2: Queen Boat texts
+   ============================================ */
+/* All queen-text overlays are fixed to viewport, GSAP controls opacity */
+
+/* ============================================
+   Section 3: Cascade Labels
+   ============================================ */
+.cascade-label {
+  flex-direction: column;
+}
+
+.cascade-label span {
+  font-family: var(--font-serif);
+  font-size: clamp(1.5rem, 1rem + 2vw, 3rem);
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-color);
+  text-shadow:
+    0 0 40px rgba(10, 10, 15, 0.95),
+    0 0 80px rgba(10, 10, 15, 0.8);
+}
+
+.cl-mathematics span {
+  color: var(--interference);
+}
+
+/* ============================================
+   Section 4: Epistemology texts
+   ============================================ */
+.epist-text {
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.epist-text h3 {
+  font-family: var(--font-sans);
+  font-size: clamp(0.875rem, 0.75rem + 0.5vw, 1.125rem);
+  font-weight: 400;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-shadow: 0 0 30px rgba(10, 10, 15, 0.9);
+}
+
+.ep-apriori h3 { color: var(--cool-blue); }
+.ep-aposteriori h3 { color: var(--warm-gold); }
+.ep-asynthesi h3 { color: var(--interference); }
+.ep-asymbiosi h3 { color: var(--cool-ice); }
+
+/* ============================================
+   Section 5: Insight lines
+   ============================================ */
+.insight-lines {
+  flex-direction: column;
+  gap: 0;
+  justify-content: center;
+}
+
+.insight-line {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+  margin-bottom: 2rem;
+}
+
+.insight-line.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.insight-domain {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: clamp(0.7rem, 0.6rem + 0.3vw, 0.85rem);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+  text-shadow: 0 0 20px rgba(10, 10, 15, 0.9);
+}
+
+.insight-line p {
+  font-size: clamp(1rem, 0.9rem + 0.6vw, 1.35rem) !important;
+  font-style: italic;
+  color: var(--warm-wheat) !important;
+}
+
+/* ============================================
+   Section 6: Portal final
+   ============================================ */
+.portal-final {
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.portal-gate-text {
+  font-size: clamp(1.5rem, 1.2rem + 1.5vw, 2.5rem) !important;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.portal-links {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.portal-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 1.25rem 2rem;
+  border: 1px solid rgba(232, 232, 232, 0.15);
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text-color);
+  transition: border-color 0.3s ease, background 0.3s ease;
+  backdrop-filter: blur(8px);
+  background: rgba(10, 10, 15, 0.4);
+}
+
+.portal-link:hover {
+  border-color: var(--interference);
+  background: rgba(201, 168, 108, 0.08);
+}
+
+.link-label {
+  font-family: var(--font-serif);
+  font-size: clamp(1.1rem, 1rem + 0.5vw, 1.5rem);
+  font-weight: 600;
+}
+
+.link-desc {
+  font-family: var(--font-sans);
+  font-size: clamp(0.7rem, 0.6rem + 0.3vw, 0.85rem);
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+.portal-final-line {
+  font-size: clamp(0.9rem, 0.8rem + 0.4vw, 1.1rem) !important;
+  font-style: italic;
+  color: var(--text-muted) !important;
+  margin-top: 1rem;
+}
+
+/* ============================================
+   Loading Screen
+   ============================================ */
+#loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: var(--bg);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 1.2s ease;
+}
+
+#loading-screen.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.loading-ring {
+  width: 48px;
+  height: 48px;
+  border: 2px solid rgba(232, 232, 232, 0.1);
+  border-top-color: var(--warm-gold);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  letter-spacing: 0.15em;
+}
+
+/* ============================================
+   Scroll progress indicator
+   ============================================ */
+#scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--warm-gold), var(--cool-blue));
+  z-index: 100;
+  transform-origin: left;
+  transition: none;
+}
+
+/* ============================================
+   Mobile adjustments
+   ============================================ */
+@media (max-width: 768px) {
+  .portal-links {
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .portal-link {
+    width: 80%;
+    max-width: 280px;
+  }
+  
+  .text-overlay p {
+    padding: 0 1rem;
+    font-size: clamp(1rem, 0.9rem + 0.8vw, 1.35rem);
+  }
+  
+  .cascade-label span {
+    font-size: clamp(1.2rem, 0.8rem + 1.5vw, 2rem);
+  }
+}
+
+/* ============================================
+   Reduced motion
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
