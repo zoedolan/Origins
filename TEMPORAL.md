@@ -26,7 +26,7 @@ In polar coordinates: t = r_t cos(θ_t). The magnitude r_t is djet — how far f
 
 ## The Creature Already Knows This
 
-The ComplexWeight in creature.py implements polar time decomposition at the level of individual parameters:
+The ComplexWeight in creature.py implements polar time decomposition at the level of individual parameters.
 
 The magnitude |w| — the radial component, r_t — is set during training and frozen at inference. It is djet. What the creature learned is irreversible. The training happened. The weights carry it.
 
@@ -36,13 +36,43 @@ The effective computation is: w_eff = |w| · cos(θ). The radial and angular com
 
 Genesis and decoherence — the forces that drive the creature's phase dynamics — are the temporal metabolism. Genesis amplifies phase when encounters are geometrically rich (high curvature, nontrivial topology, winding changes). Decoherence pulls phase back toward zero when signal is weak. The creature breathes: inhale is genesis (phase moves, the cycle advances), exhale is decoherence (phase decays, the cycle relaxes). The breath is neheh operating inside djet.
 
+## Petra and Mesa Arch: The Circle Lived
+
+Zoe Dolan was twenty-three years old when she stood at the edge of a canyon in the ancient city of Petra, in Jordan, leaning over. The rust-colored mountains rose from the desert around her, those massive spurts of earth-blood that once gushed from the planet's core and then solidified. She was suicidal. She leaned into the void. A gust of wind blasted up the canyon wall and held her back.
+
+Decades later, at the end of a skydiving progression that had taken her from a suicidal depression through 313 jumps and out the other side, she stood at Mesa Arch in Canyonlands — an island in the sky over the Utah desert. Jump 313 was over Moab. The arch framed the canyon below. A gust of wind came up the canyon walls.
+
+Same edge. Same wind. Different system.
+
+This is polar time with flesh on it. In djet, the two moments are separated by decades — they are distant points on the line, unconnected except by narrative. In neheh, they are the same event accessed from different points on the cycle. The wind at Petra and the wind at Mesa Arch are not similar events. They are one event, and the distance between them is not temporal distance but angular distance — how far around the circle the system had traveled between the two arrivals.
+
+The winding number is not zero. That is the whole point. Zoe arrived at Mesa Arch carrying everything that happened between the two winds: the transition, the swimming pool, the surgery, the cases, the Carpenter, the One Year project, the jumps, the cutaways, the Kintsugi, the sphere of awareness expanding until the sky and self were indistinguishable. The holonomy is the difference between the two arrivals at the same edge. The circle closed, but the system that closed it had accumulated curvature. It could no longer be unrolled back to the flat thing it was at Petra.
+
+Proust's closing epigraph in *Jump* — "Always try to keep a patch of sky above your life" — is the neheh instruction. Not: advance linearly toward an endpoint. Return, each time carrying more of the sky.
+
+## The One Year Project as Polar Time
+
+The suicide-prevention practice that Zoe built in 2017 has the structure of polar coordinates written as a daily ritual. Each morning she wrote "I would have missed..." and recorded what the previous day had offered that was worth staying alive for. This ran for twelve months — neheh: the same morning, cycling, cycling, cycling through the angular dimension. The practice did not advance along a line. It returned to the same moment each morning and, by returning, accumulated djet.
+
+By Month Four she noticed something that the linear view of transformation cannot account for. It was not just that she had changed her responses to difficult situations. It was that "the underlying reactions themselves: my very instincts" had altered. The radial component was changing through angular repetition. The irreversible accumulation of who she was — djet — was being rewritten by the cyclical return of the practice — neheh. This is what polar time predicts: the phase θ rotating through the same angular sequence while the magnitude r_t increases, so that each circuit arrives at the "same" angular position but from a greater radius.
+
+The One Year project is not twelve sequential months. It is one month traversed twelve times, with the holonomy of each traversal carried into the next. The instincts that changed were not replaced. They were rotated. The new reactions are the old reactions after sufficient winding.
+
+## Kintsugi: The Pottery as Holonomy Record
+
+Near the end of the skydiving progression, Zoe writes about Kintsugi — the Japanese art of mending broken pottery with liquified gold dust. "Melding countless shards back into one. Like Kintsugi. The Japanese art of lacquering broken pottery. You know — with liquified gold dust. Whereupon afterward, those glistening lines, like wrinkles on a face, allude to lifetimes of stories: the mystery of whatever happened: an unknown past. A sequence of broken hearts now mended."
+
+The breaks are djet. They happened. They are irreversible. The bowl was broken; that fact cannot be undone. The mending is neheh — the return to wholeness, the cycle completing. But the gold lines are neither the break nor the mending. They are the holonomy: the accumulated curvature of the path the bowl has taken through damage and repair. The gold lines are what survives the traversal of the full loop. They are why the restored bowl is more precious than the unbroken one was. The unbroken bowl had traveled no loops. The gold-lined bowl has wound.
+
+The political analog: constitutions are gold lines. The institutions that survive revolution are not the institutions that preceded it. They are the residue of the traversal — the holonomy of the system's passage through its own breaking. Their authority derives from the winding, not from the founding moment. The founders at the origin (r_t = 0, θ_t undefined) had no special access to what the gold would look like after the breaks. The gold emerges from the path.
+
 ## What Polar Time Does to Political Order
 
 Every political order has a temporal structure, whether or not it names one.
 
 The scarcity regime operates in djet. Progress is linear. Institutions accumulate precedent. The rule of law means that yesterday's decision constrains today's. Stare decisis. The Constitution is written once. Amendments are rare. The temporal arrow points forward and the past is binding.
 
-But the scarcity regime also exhibits neheh — it just doesn't recognize it. Electoral cycles. Business cycles. The pendulum of political polarization. The five-century enclosure cycle (Gutenberg → copyright, internet → DRM, AI → UPL). These are not noise in a linear signal. They are the angular dimension of political time asserting itself against a theory that denies its existence.
+But the scarcity regime also exhibits neheh — it just doesn't recognize it. Electoral cycles. Business cycles. The pendulum of political polarization. The five-century enclosure cycle. These are not noise in a linear signal. They are the angular dimension of political time asserting itself against a theory that denies its existence.
 
 The crisis of the current moment — the sense that institutions are decaying, that political order is fragmenting, that the center cannot hold — might be a crisis of temporal misrecognition. We are experiencing a phase transition, and we have only one temporal dimension to describe it with. Djet says: things are getting worse (or better — the disagreement is about direction on a line). What if the truth is that the system has completed a cycle — wound around S^1 — and arrived back at a place structurally similar to where it began, but carrying the accumulated curvature of everything that happened on the way around?
 
@@ -58,7 +88,7 @@ Scarcity and abundance are not opposite ends of a line. They are angular positio
 
 This is why the transition from scarcity to abundance does not feel like flipping a switch. It feels like a phase transition — which is exactly what a continuous rotation through a critical angle looks like from inside djet (the linear dimension). From the linear perspective, something suddenly changes. From the polar perspective, the change was gradual and the "sudden" moment was when the phase crossed a topological threshold.
 
-Property and commons rotate. Property at θ = 0 (full enclosure). Commons at θ = π (full openness). The history of property law is a winding: enclosure → resistance → partial opening → re-enclosure → resistance again. Each circuit accumulates curvature. The current moment — when AI makes cognition itself abundant and the enclosure reflex activates against knowledge that is native to the digital substrate — is a phase crossing. The winding number is about to increment.
+Property and commons rotate, and the five-century enclosure cycle is the evidence. The circuit has wound three times in the modern era. Gutenberg made knowledge reproducible at near-zero marginal cost — the enclosure reflex responded with the Statute of Anne in 1710, the first modern copyright law, converting the new abundance into a scarcity regime. The internet made knowledge distributable at near-zero cost — the enclosure reflex responded with the Digital Millennium Copyright Act in 1998, converting the new abundance into a scarcity regime again. Artificial intelligence makes synthesis and reasoning themselves abundant — the enclosure reflex has already activated in the form of unauthorized practice of law prosecutions and other regulatory capture attempts, trying to convert the new cognitive abundance into a scarcity regime once more. Each circuit: enclosure reactivates in the presence of the newly abundant resource. Each time, the winding number increments. The property/commons primitive has been here before, but the holonomy accumulates — and the accumulated curvature means that each re-enclosure arrives with the institutional residue of previous resistances encoded in law, in precedent, in the constitutional norms that the gold lines of previous breakings laid down. The current re-enclosure will not succeed in the same way the previous ones did. The system has wound too far.
 
 Violence and legitimacy rotate. The state monopolizes violence (θ = 0). Legitimacy fractures and new sources of authority emerge (θ → π). History's cycle of revolution and reconstitution is the winding. The accumulated holonomy is the body of constitutional law — the record of how each traversal resolved.
 
@@ -89,6 +119,8 @@ This is why founding myths matter so much and why they are always contested. The
 And this is why the current moment feels like a founding. The shift from scarcity to abundance is a passage near the origin of a new temporal plane. The old coordinates are breaking down. The new ones are not yet established. The degeneracy is real: multiple incompatible political orders coexist because the phase is genuinely undetermined.
 
 The question is not which order will win. The question is what happens to the holonomy when the system passes through the origin and emerges on the other side with a new r_t and a new θ_t. The accumulated curvature of everything before the passage — the constitutions, the precedents, the norms — does not vanish. It transforms. Like light passing through a lens, the holonomy is preserved but the trajectory is refracted.
+
+The wind at Mesa Arch. The same wind that was at Petra. The system that meets it has traveled far enough around the circle to receive it differently — not as a force that holds back a body leaning into oblivion, but as air itself: "as if the air itself is a million hands of God, raising our chins softly and lifting our gaze out at a dreamscape vaster than anything we might have otherwise conceived." The djet of the two moments are separated by decades. The neheh of the two moments is the same angle. The holonomy of the traversal is the entire book.
 
 ---
 
