@@ -290,6 +290,46 @@ body {
   letter-spacing: 0.05em;
 }
 
+.portal-link-talk {
+  border-color: rgba(212, 165, 116, 0.35);
+  background: rgba(212, 165, 116, 0.06);
+}
+
+.portal-link-talk:hover {
+  border-color: var(--warm-gold);
+  background: rgba(212, 165, 116, 0.12);
+}
+
+/* Secondary ecosystem links — smaller, more subtle */
+.portal-links-secondary {
+  gap: 1.25rem;
+  margin-top: -0.5rem;
+}
+
+.portal-links-secondary .portal-link {
+  padding: 0.85rem 1.5rem;
+  border-color: rgba(232, 232, 232, 0.08);
+  background: rgba(10, 10, 15, 0.25);
+}
+
+.portal-links-secondary .link-label {
+  font-size: clamp(0.9rem, 0.85rem + 0.3vw, 1.15rem);
+}
+
+.portal-links-secondary .link-desc {
+  font-size: clamp(0.6rem, 0.55rem + 0.2vw, 0.75rem);
+}
+
+.portal-link-law {
+  border-color: rgba(74, 144, 217, 0.25) !important;
+  background: rgba(74, 144, 217, 0.04) !important;
+}
+
+.portal-link-law:hover {
+  border-color: var(--cool-blue) !important;
+  background: rgba(74, 144, 217, 0.1) !important;
+}
+
 .portal-final-line {
   font-size: clamp(0.9rem, 0.8rem + 0.4vw, 1.1rem) !important;
   font-style: italic;
@@ -298,63 +338,122 @@ body {
 }
 
 /* ============================================
-   Scroll Indicator
+   Scroll Indicator — prominent, animated
    ============================================ */
+/* ---- Scroll Indicator: dramatic particle-flow ---- */
 .scroll-indicator {
   position: fixed;
-  bottom: 2.5rem;
+  bottom: 2rem;
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0;
   opacity: 0;
-  animation: fadeInIndicator 1.5s ease 2s forwards;
+  animation: fadeInIndicator 1.5s ease 1.5s forwards;
   transition: opacity 0.8s ease;
   pointer-events: none;
 }
 
 .scroll-indicator.hidden {
   opacity: 0 !important;
+  transition: opacity 0.5s ease;
+}
+
+/* The flowing particle column — wide and tall */
+.scroll-flow {
+  position: relative;
+  width: 60px;
+  height: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  overflow: visible;
+}
+
+.scroll-particle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  animation: particleFall 2.8s ease-in-out infinite;
+}
+
+.sp-warm {
+  background: var(--warm-gold);
+  box-shadow:
+    0 0 12px var(--warm-gold),
+    0 0 30px rgba(212, 165, 116, 0.6),
+    0 0 60px rgba(212, 165, 116, 0.2);
+}
+
+.sp-cool {
+  background: var(--cool-blue);
+  box-shadow:
+    0 0 12px var(--cool-blue),
+    0 0 30px rgba(74, 144, 217, 0.6),
+    0 0 60px rgba(74, 144, 217, 0.2);
+}
+
+/* Stagger: they weave and fall, warm left / cool right */
+.sp-1 { animation-delay: 0.0s;  left: 8px; }
+.sp-2 { animation-delay: 0.35s; left: 40px; }
+.sp-3 { animation-delay: 0.7s;  left: 16px; }
+.sp-4 { animation-delay: 1.05s; left: 36px; }
+.sp-5 { animation-delay: 1.4s;  left: 10px; }
+.sp-6 { animation-delay: 1.75s; left: 42px; }
+.sp-7 { animation-delay: 2.1s;  left: 20px; }
+.sp-8 { animation-delay: 2.45s; left: 32px; }
+
+@keyframes particleFall {
+  0%   { top: -8px;  opacity: 0;   transform: scale(0.4); }
+  10%  { opacity: 1;   transform: scale(1.2); }
+  40%  { opacity: 1;   transform: scale(1); }
+  75%  { opacity: 0.5; transform: scale(0.8); }
+  100% { top: 130px; opacity: 0;   transform: scale(0.1); }
+}
+
+/* Central glow line — pulses warm → cool → interference → warm */
+.scroll-glow-line {
+  width: 2px;
+  height: 90px;
+  margin-top: -12px;
+  border-radius: 1px;
+  animation: glowPulse 4s ease-in-out infinite;
+  opacity: 0.7;
+  filter: blur(1.5px);
+}
+
+@keyframes glowPulse {
+  0%   { opacity: 0.3; box-shadow: 0 0 8px var(--warm-gold), 0 0 20px rgba(212,165,116,0.3); background: var(--warm-gold); }
+  25%  { opacity: 0.8; box-shadow: 0 0 12px var(--cool-blue), 0 0 30px rgba(74,144,217,0.4); background: var(--cool-blue); }
+  50%  { opacity: 1.0; box-shadow: 0 0 16px var(--interference), 0 0 40px rgba(168,130,200,0.4); background: var(--interference); }
+  75%  { opacity: 0.8; box-shadow: 0 0 12px var(--cool-blue), 0 0 30px rgba(74,144,217,0.4); background: var(--cool-blue); }
+  100% { opacity: 0.3; box-shadow: 0 0 8px var(--warm-gold), 0 0 20px rgba(212,165,116,0.3); background: var(--warm-gold); }
 }
 
 .scroll-indicator-text {
   font-family: var(--font-sans);
-  font-size: 0.7rem;
-  letter-spacing: 0.25em;
+  font-size: 0.8rem;
+  letter-spacing: 0.4em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  margin-top: 0.75rem;
+  animation: textBreath 5s ease-in-out infinite;
 }
 
-.scroll-indicator-arrow {
-  width: 1px;
-  height: 32px;
-  position: relative;
-  overflow: hidden;
-}
-
-.scroll-indicator-arrow::after {
-  content: '';
-  position: absolute;
-  top: -100%;
-  left: 0;
-  width: 1px;
-  height: 100%;
-  background: linear-gradient(to bottom, transparent, var(--text-muted));
-  animation: scrollLine 2s ease-in-out infinite;
+@keyframes textBreath {
+  0%, 100% { color: var(--warm-gold); opacity: 0.6; text-shadow: 0 0 8px rgba(212,165,116,0.3); }
+  25%      { color: var(--cool-ice);  opacity: 1;   text-shadow: 0 0 12px rgba(74,144,217,0.4); }
+  50%      { color: var(--interference); opacity: 1; text-shadow: 0 0 16px rgba(168,130,200,0.4); }
+  75%      { color: var(--cool-ice);  opacity: 1;   text-shadow: 0 0 12px rgba(74,144,217,0.4); }
 }
 
 @keyframes fadeInIndicator {
   to { opacity: 1; }
-}
-
-@keyframes scrollLine {
-  0% { top: -100%; }
-  50% { top: 100%; }
-  50.01% { top: -100%; }
-  100% { top: -100%; }
 }
 
 /* ============================================
