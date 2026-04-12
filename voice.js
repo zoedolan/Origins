@@ -16,7 +16,7 @@
  */
 
 const VOICE_CONFIG = {
-  apiBase: 'https://tiffany-burton-initiative-adelaide.trycloudflare.com',
+  apiBase: 'https://shoot-interim-value-jazz.trycloudflare.com',
   maxResponseWords: 50,
   speechRate: 0.88,
   speechPitch: 1.0,
