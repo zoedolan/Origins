@@ -198,6 +198,75 @@ body {
 .ep-asymbiosi h3 { color: var(--cool-ice); }
 
 /* ============================================
+   Vybn Law Thread — subtle inline invitations
+   ============================================ */
+.vybn-law-thread {
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 0 2.5rem 3.5rem 0;
+}
+
+.vl-thread-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+  max-width: 360px;
+  text-align: right;
+}
+
+.vl-thread-label {
+  font-family: var(--font-sans);
+  font-size: clamp(0.6rem, 0.55rem + 0.2vw, 0.75rem);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--cool-blue);
+  text-shadow: 0 0 20px rgba(74, 144, 217, 0.3);
+}
+
+.vl-thread-text {
+  font-family: var(--font-serif) !important;
+  font-size: clamp(0.85rem, 0.78rem + 0.4vw, 1.05rem) !important;
+  line-height: 1.6 !important;
+  color: rgba(168, 200, 232, 0.75) !important;
+  text-shadow: 0 0 30px rgba(10, 10, 15, 0.95) !important;
+}
+
+.vl-thread-link {
+  font-family: var(--font-sans);
+  font-size: clamp(0.7rem, 0.65rem + 0.2vw, 0.8rem);
+  color: var(--cool-blue);
+  text-decoration: none;
+  letter-spacing: 0.1em;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid rgba(74, 144, 217, 0.2);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  pointer-events: auto;
+  backdrop-filter: blur(4px);
+  background: rgba(74, 144, 217, 0.04);
+}
+
+.vl-thread-link:hover {
+  border-color: var(--cool-blue);
+  background: rgba(74, 144, 217, 0.1);
+  color: var(--cool-ice);
+}
+
+@media (max-width: 768px) {
+  .vybn-law-thread {
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 1rem 2.5rem;
+  }
+  .vl-thread-inner {
+    align-items: center;
+    text-align: center;
+  }
+}
+
+/* ============================================
    Section 5: Insight lines
    ============================================ */
 .insight-lines {

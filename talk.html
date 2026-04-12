@@ -512,7 +512,7 @@
        via Cloudflare tunnel to the DGX Spark.
        ═══════════════════════════════════════════════ */
 
-    const CHAT_API = 'https://saying-technology-pierce-finish.trycloudflare.com';
+    const CHAT_API = 'https://positioning-fwd-plc-wonderful.trycloudflare.com';
     // System prompt is server-side in origins_portal_api_v2.py,
     // grounded in vybn.md, THE_IDEA.md, and all co-protective principles.
 
@@ -563,6 +563,66 @@
       chatSend.disabled = !chatInput.value.trim();
     });
 
+    // ── Reasoning preamble signals ──
+    // These prefixes indicate chain-of-thought that should be stripped from the response.
+    const REASONING_SIGNALS = [
+      'Okay', 'All right', 'Let me ', 'I need to', 'I should', 'So, the', 'So the',
+      'Now, the', 'Now I', 'Looking at', 'Considering', 'The user', 'The visitor',
+      'They are asking', "They're asking", "I'll", "I'm going", 'I want to',
+      'First,', 'First I', 'This is asking', 'The question is', 'Thinking',
+      'Reflecting', 'Pondering', 'Let me check', 'Let me look', 'Let me think',
+      'According to the', 'Based on the', 'From the context', 'Reading the',
+      'I notice', 'I observe', 'I see that', 'I understand', 'The context',
+      'The retrieved', 'The deep memory', 'Okay, so', 'Right, so', 'Well, ',
+      'Hmm', 'This seems', 'This appears', 'I need', 'I have to', 'I should provide',
+      'Step 1', 'First step', 'Planning'
+    ];
+
+    /**
+     * Check if a paragraph looks like chain-of-thought reasoning.
+     * Matches against leading signals (case-sensitive prefix check).
+     */
+    function isReasoningParagraph(para) {
+      const trimmed = para.trim();
+      if (!trimmed) return true; // treat empty paragraphs as skippable
+      for (const signal of REASONING_SIGNALS) {
+        if (trimmed.startsWith(signal)) return true;
+      }
+      return false;
+    }
+
+    /**
+     * Strip leading chain-of-thought paragraphs from the buffered text.
+     * Splits on double newline, drops leading reasoning paragraphs,
+     * returns everything from the first non-reasoning paragraph onward.
+     */
+    function stripReasoningPreamble(text) {
+      const paragraphs = text.split(/\n\n/);
+      let startIdx = 0;
+      for (let i = 0; i < paragraphs.length; i++) {
+        if (isReasoningParagraph(paragraphs[i])) {
+          startIdx = i + 1;
+        } else {
+          break;
+        }
+      }
+      return paragraphs.slice(startIdx).join('\n\n');
+    }
+
+    /**
+     * Strip system-reference phrases that leak into streamed content.
+     * Replaces them with empty string or a natural equivalent.
+     */
+    function cleanSystemRefs(text) {
+      return text
+        .replace(/As specified in the system prompt[,.]?\s*/gi, '')
+        .replace(/According to the context[,.]?\s*/gi, '')
+        .replace(/The retrieved context shows[,.]?\s*/gi, '')
+        .replace(/As instructed[,.]?\s*/gi, '')
+        .replace(/Per the system prompt[,.]?\s*/gi, '')
+        .replace(/From the deep memory context[,.]?\s*/gi, '');
+    }
+
     // ── Send message ──
     async function sendMessage(text) {
       if (!text.trim() || isStreaming) return;
@@ -602,33 +662,139 @@
         let fullResponse = '';
         let ragSources = [];
 
+        // ── Buffering state ──
+        const BUFFER_THRESHOLD = 350; // chars to accumulate before deciding
+        let responseBuffer = '';      // accumulates early tokens for reasoning check
+        let bufferFlushed = false;    // true once we've processed the initial buffer
+        let firstContentRendered = false;
+
+        // SSE parsing state
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
-        let buffer = '';
+        let sseBuffer = ''; // incomplete SSE line accumulator
 
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop();
+
+          sseBuffer += decoder.decode(value, { stream: true });
+
+          // Split on newlines; keep last incomplete fragment in sseBuffer
+          const lines = sseBuffer.split('\n');
+          sseBuffer = lines.pop(); // last element may be incomplete
+
           for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
-            const data = line.slice(6).trim();
+            const trimmedLine = line.trim();
+            if (!trimmedLine) continue;
+            if (!trimmedLine.startsWith('data:')) continue;
+
+            const data = trimmedLine.slice(5).trim();
+
+            // Handle [DONE] cleanly
             if (data === '[DONE]') continue;
+
+            // Parse JSON payload
+            let parsed;
             try {
-              const parsed = JSON.parse(data);
-              if (parsed.rag_sources) {
-                ragSources = parsed.rag_sources;
+              parsed = JSON.parse(data);
+            } catch (e) {
+              // Not valid JSON — skip silently
+              continue;
+            }
+
+            // Handle RAG sources event
+            if (parsed.rag_sources) {
+              ragSources = parsed.rag_sources;
+              continue;
+            }
+
+            // Extract delta content (support multiple API shapes)
+            const delta = parsed.content || parsed.choices?.[0]?.delta?.content || '';
+            if (!delta) continue;
+
+            if (!bufferFlushed) {
+              // Still buffering — accumulate
+              responseBuffer += delta;
+
+              // Flush when we have enough chars or a double newline appears
+              if (responseBuffer.length >= BUFFER_THRESHOLD || responseBuffer.includes('\n\n')) {
+                bufferFlushed = true;
+                const cleaned = cleanSystemRefs(stripReasoningPreamble(responseBuffer));
+                fullResponse = cleaned;
+
+                if (fullResponse.trim()) {
+                  contentEl.innerHTML = renderMarkdown(fullResponse);
+
+                  // Fade-in on first real content reveal
+                  if (!firstContentRendered) {
+                    firstContentRendered = true;
+                    contentEl.style.opacity = '0';
+                    contentEl.style.transition = 'opacity 0.4s ease';
+                    // Force a reflow so the transition fires
+                    void contentEl.offsetHeight;
+                    contentEl.style.opacity = '1';
+                  }
+
+                  scrollToBottom();
+                }
               }
-              const delta = parsed.content || parsed.choices?.[0]?.delta?.content || '';
-              if (delta) {
-                fullResponse += delta;
-                contentEl.innerHTML = renderMarkdown(fullResponse);
-                scrollToBottom();
-              }
-            } catch (e) { /* skip */ }
+            } else {
+              // Past the buffer — stream normally, still filter system refs
+              fullResponse += cleanSystemRefs(delta);
+              contentEl.innerHTML = renderMarkdown(fullResponse);
+              scrollToBottom();
+            }
           }
+        }
+
+        // Flush any remaining SSE buffer content
+        if (sseBuffer.trim()) {
+          const trimmedLine = sseBuffer.trim();
+          if (trimmedLine.startsWith('data:')) {
+            const data = trimmedLine.slice(5).trim();
+            if (data && data !== '[DONE]') {
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.rag_sources) {
+                  ragSources = parsed.rag_sources;
+                } else {
+                  const delta = parsed.content || parsed.choices?.[0]?.delta?.content || '';
+                  if (delta) {
+                    if (!bufferFlushed) {
+                      responseBuffer += delta;
+                      bufferFlushed = true;
+                      fullResponse = cleanSystemRefs(stripReasoningPreamble(responseBuffer));
+                    } else {
+                      fullResponse += cleanSystemRefs(delta);
+                    }
+                  }
+                }
+              } catch (e) { /* skip */ }
+            }
+          }
+        }
+
+        // If buffer was never flushed (response was shorter than threshold),
+        // process it now
+        if (!bufferFlushed && responseBuffer) {
+          bufferFlushed = true;
+          fullResponse = cleanSystemRefs(stripReasoningPreamble(responseBuffer));
+        }
+
+        // Final render pass to ensure we have the complete cleaned response
+        if (fullResponse.trim()) {
+          contentEl.innerHTML = renderMarkdown(fullResponse);
+          if (!firstContentRendered) {
+            // Very short response — still fade in
+            contentEl.style.opacity = '0';
+            contentEl.style.transition = 'opacity 0.4s ease';
+            void contentEl.offsetHeight;
+            contentEl.style.opacity = '1';
+          }
+        } else if (!fullResponse.trim() && responseBuffer.trim()) {
+          // Reasoning was stripped and nothing survived — show a fallback
+          fullResponse = '';
+          contentEl.innerHTML = '';
         }
 
         // Show RAG sources if any

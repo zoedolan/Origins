@@ -213,11 +213,17 @@ function setupScrollTriggers() {
   fadeOverlay('cl-biosphere',   5.9, 6.1, 6.3);
   fadeOverlay('cl-mathematics', 6.3, 6.6, 7.0);
   
+  // --- Vybn Law thread 1: after Mathematics cascade, before epistemologies ---
+  fadeOverlay('vl-thread-1', 6.6, 6.85, 7.0);
+  
   // --- Section 4: Epistemology texts ---
   fadeOverlay('ep-apriori',     7.0, 7.4, 7.8);
   fadeOverlay('ep-aposteriori', 7.8, 8.2, 8.6);
   fadeOverlay('ep-asynthesi',   8.6, 9.0, 9.4);
   fadeOverlay('ep-asymbiosi',   9.4, 9.8, 10.5);
+  
+  // --- Vybn Law thread 2: during insight section ---
+  fadeOverlay('vl-thread-2', 10.6, 10.85, 11.1);
   
   // --- Section 5: Insight lines (cumulative reveal) ---
   var insightOverlay = document.getElementById('overlay-insight');
