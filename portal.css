@@ -393,14 +393,17 @@ body {
 
 .portal-links-secondary .portal-link {
   padding: 0.85rem 1.5rem;
-  border-color: rgba(232, 232, 232, 0.12);
+  border-color: rgba(232, 232, 232, 0.18);
   background: rgba(10, 10, 15, 0.25);
+  cursor: pointer;
+  transition: border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
 }
 
 .portal-links-secondary .portal-link:hover {
-  border-color: var(--interference);
-  background: rgba(201, 168, 108, 0.1);
-  box-shadow: 0 0 20px rgba(201, 168, 108, 0.08);
+  border-color: var(--warm-gold);
+  background: rgba(212, 165, 116, 0.12);
+  box-shadow: 0 0 24px rgba(212, 165, 116, 0.15);
+  transform: translateY(-1px);
 }
 
 .portal-links-secondary .link-label {

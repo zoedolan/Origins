@@ -16,7 +16,8 @@
  */
 
 const VOICE_CONFIG = {
-  apiBase: 'https://shoot-interim-value-jazz.trycloudflare.com',
+  apiBase: document.querySelector('meta[name="api-base"]')?.content
+    || 'https://shoot-interim-value-jazz.trycloudflare.com',
   maxResponseWords: 50,
   speechRate: 0.88,
   speechPitch: 1.0,

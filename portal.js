@@ -200,26 +200,26 @@ function setupScrollTriggers() {
     });
   }
   
-  // --- Section 2: Queen Boat texts (widened for reading time) ---
-  fadeOverlay('qt-1', 2.9, 3.15, 3.6);
-  fadeOverlay('qt-2', 3.45, 3.7, 4.15);
-  fadeOverlay('qt-3', 3.95, 4.15, 4.6);
-  fadeOverlay('qt-4', 4.35, 4.6, 5.05);
+  // --- Section 2: Queen Boat texts (widened further for reading time) ---
+  fadeOverlay('qt-1', 2.8, 3.05, 3.65);
+  fadeOverlay('qt-2', 3.4, 3.65, 4.25);
+  fadeOverlay('qt-3', 3.9, 4.15, 4.75);
+  fadeOverlay('qt-4', 4.3, 4.55, 5.15);
   
-  // --- Section 3: Cascade labels (lingering for readability) ---
-  fadeOverlay('cl-family',      5.0, 5.2, 5.5);
-  fadeOverlay('cl-tribe',       5.3, 5.5, 5.8);
-  fadeOverlay('cl-species',     5.6, 5.8, 6.1);
-  fadeOverlay('cl-biosphere',   5.9, 6.15, 6.5);
-  fadeOverlay('cl-mathematics', 6.3, 6.6, 7.05);
+  // --- Section 3: Cascade labels (lingering longer for readability) ---
+  fadeOverlay('cl-family',      5.0, 5.2, 5.6);
+  fadeOverlay('cl-tribe',       5.3, 5.5, 5.9);
+  fadeOverlay('cl-species',     5.6, 5.8, 6.2);
+  fadeOverlay('cl-biosphere',   5.9, 6.15, 6.6);
+  fadeOverlay('cl-mathematics', 6.3, 6.6, 7.15);
   
   // --- Vybn Law thread 1: after Mathematics cascade, before epistemologies ---
   fadeOverlay('vl-thread-1', 6.55, 6.75, 7.15);
   
-  // --- Section 4: Epistemology texts (wider windows) ---
-  fadeOverlay('ep-apriori',     7.0, 7.4, 7.9);
-  fadeOverlay('ep-aposteriori', 7.8, 8.2, 8.7);
-  fadeOverlay('ep-asynthesi',   8.6, 9.0, 9.45);
+  // --- Section 4: Epistemology texts (wider windows for reading) ---
+  fadeOverlay('ep-apriori',     7.0, 7.4, 8.05);
+  fadeOverlay('ep-aposteriori', 7.8, 8.2, 8.85);
+  fadeOverlay('ep-asynthesi',   8.6, 9.0, 9.55);
   
   // --- Vybn Law thread 3: between a synthesi and a symbiosi ---
   fadeOverlay('vl-thread-3', 9.2, 9.4, 9.75);

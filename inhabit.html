@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>The Synaptic Map — Origins</title>
   <meta name="description" content="Cross-repo topology of 2,600 chunks across five repositories. Connections discovered by walking the K-orthogonal residual space.">
+  <meta name="api-base" content="https://shoot-interim-value-jazz.trycloudflare.com">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1360,7 +1361,8 @@
   });
 
   // ── Perspective API call ──
-  const PERSPECTIVE_API = 'https://shoot-interim-value-jazz.trycloudflare.com';
+  const PERSPECTIVE_API = document.querySelector('meta[name="api-base"]')?.content
+    || 'https://shoot-interim-value-jazz.trycloudflare.com';
 
   async function callPerspective(concept) {
     const resultEl = document.getElementById('perspective-result');
