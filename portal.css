@@ -127,12 +127,28 @@ body {
   gap: 1.2rem;
 }
 
+.entry-title-link {
+  text-decoration: none;
+  color: inherit;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: color 0.4s ease;
+}
+
+.entry-title-link:hover h1 {
+  color: var(--warm-gold);
+  text-shadow:
+    0 0 60px rgba(212, 165, 116, 0.3),
+    0 0 120px rgba(10, 10, 15, 0.8);
+}
+
 .entry-title h1 {
   font-family: var(--font-serif);
   font-size: clamp(2.5rem, 2rem + 3vw, 5rem);
   font-weight: 600;
   letter-spacing: 0.04em;
   color: var(--text-color);
+  transition: color 0.4s ease, text-shadow 0.4s ease;
   text-shadow:
     0 0 60px rgba(10, 10, 15, 0.95),
     0 0 120px rgba(10, 10, 15, 0.8);
@@ -377,8 +393,14 @@ body {
 
 .portal-links-secondary .portal-link {
   padding: 0.85rem 1.5rem;
-  border-color: rgba(232, 232, 232, 0.08);
+  border-color: rgba(232, 232, 232, 0.12);
   background: rgba(10, 10, 15, 0.25);
+}
+
+.portal-links-secondary .portal-link:hover {
+  border-color: var(--interference);
+  background: rgba(201, 168, 108, 0.1);
+  box-shadow: 0 0 20px rgba(201, 168, 108, 0.08);
 }
 
 .portal-links-secondary .link-label {
@@ -397,6 +419,24 @@ body {
 .portal-link-law:hover {
   border-color: var(--cool-blue) !important;
   background: rgba(74, 144, 217, 0.1) !important;
+}
+
+.portal-vl-thread {
+  font-size: clamp(0.8rem, 0.72rem + 0.3vw, 0.95rem) !important;
+  margin-top: 0.25rem;
+}
+
+.portal-vl-inline {
+  color: var(--cool-blue);
+  text-decoration: none;
+  font-family: var(--font-sans);
+  letter-spacing: 0.05em;
+  transition: color 0.3s ease;
+  pointer-events: auto;
+}
+
+.portal-vl-inline:hover {
+  color: var(--cool-ice);
 }
 
 .portal-final-line {
@@ -631,6 +671,52 @@ body {
   .cascade-label span {
     font-size: clamp(1.2rem, 0.8rem + 1.5vw, 2rem);
   }
+}
+
+/* ============================================
+   Voice Toggle Button
+   ============================================ */
+#voice-toggle {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 100;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(232, 232, 232, 0.12);
+  background: rgba(10, 10, 15, 0.6);
+  backdrop-filter: blur(8px);
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.4s ease;
+  opacity: 0;
+  animation: fadeInIndicator 2s ease 3s forwards;
+}
+
+#voice-toggle:hover {
+  border-color: var(--warm-gold);
+  color: var(--warm-gold);
+  background: rgba(212, 165, 116, 0.08);
+}
+
+#voice-toggle.active {
+  border-color: var(--warm-gold);
+  color: var(--warm-gold);
+  background: rgba(212, 165, 116, 0.1);
+}
+
+#voice-toggle.speaking {
+  box-shadow: 0 0 12px rgba(212, 165, 116, 0.3), 0 0 24px rgba(212, 165, 116, 0.1);
+  animation: voicePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes voicePulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(212, 165, 116, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(212, 165, 116, 0.5), 0 0 40px rgba(212, 165, 116, 0.15); }
 }
 
 /* ============================================

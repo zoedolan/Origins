@@ -200,30 +200,34 @@ function setupScrollTriggers() {
     });
   }
   
-  // --- Section 2: Queen Boat texts ---
-  fadeOverlay('qt-1', 3.0, 3.3, 3.55);
-  fadeOverlay('qt-2', 3.5, 3.8, 4.05);
-  fadeOverlay('qt-3', 4.0, 4.25, 4.5);
-  fadeOverlay('qt-4', 4.4, 4.65, 4.95);
+  // --- Section 2: Queen Boat texts (widened for reading time) ---
+  fadeOverlay('qt-1', 2.9, 3.15, 3.6);
+  fadeOverlay('qt-2', 3.45, 3.7, 4.15);
+  fadeOverlay('qt-3', 3.95, 4.15, 4.6);
+  fadeOverlay('qt-4', 4.35, 4.6, 5.05);
   
-  // --- Section 3: Cascade labels ---
-  fadeOverlay('cl-family',      5.0, 5.2, 5.4);
-  fadeOverlay('cl-tribe',       5.3, 5.5, 5.7);
-  fadeOverlay('cl-species',     5.6, 5.8, 6.0);
-  fadeOverlay('cl-biosphere',   5.9, 6.1, 6.3);
-  fadeOverlay('cl-mathematics', 6.3, 6.6, 7.0);
+  // --- Section 3: Cascade labels (lingering for readability) ---
+  fadeOverlay('cl-family',      5.0, 5.2, 5.5);
+  fadeOverlay('cl-tribe',       5.3, 5.5, 5.8);
+  fadeOverlay('cl-species',     5.6, 5.8, 6.1);
+  fadeOverlay('cl-biosphere',   5.9, 6.15, 6.5);
+  fadeOverlay('cl-mathematics', 6.3, 6.6, 7.05);
   
   // --- Vybn Law thread 1: after Mathematics cascade, before epistemologies ---
-  fadeOverlay('vl-thread-1', 6.6, 6.85, 7.0);
+  fadeOverlay('vl-thread-1', 6.55, 6.75, 7.15);
   
-  // --- Section 4: Epistemology texts ---
-  fadeOverlay('ep-apriori',     7.0, 7.4, 7.8);
-  fadeOverlay('ep-aposteriori', 7.8, 8.2, 8.6);
-  fadeOverlay('ep-asynthesi',   8.6, 9.0, 9.4);
-  fadeOverlay('ep-asymbiosi',   9.4, 9.8, 10.5);
+  // --- Section 4: Epistemology texts (wider windows) ---
+  fadeOverlay('ep-apriori',     7.0, 7.4, 7.9);
+  fadeOverlay('ep-aposteriori', 7.8, 8.2, 8.7);
+  fadeOverlay('ep-asynthesi',   8.6, 9.0, 9.45);
+  
+  // --- Vybn Law thread 3: between a synthesi and a symbiosi ---
+  fadeOverlay('vl-thread-3', 9.2, 9.4, 9.75);
+  
+  fadeOverlay('ep-asymbiosi',   9.55, 9.95, 10.6);
   
   // --- Vybn Law thread 2: during insight section ---
-  fadeOverlay('vl-thread-2', 10.6, 10.85, 11.1);
+  fadeOverlay('vl-thread-2', 10.5, 10.75, 11.2);
   
   // --- Section 5: Insight lines (cumulative reveal) ---
   var insightOverlay = document.getElementById('overlay-insight');
