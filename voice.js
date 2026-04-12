@@ -219,7 +219,7 @@ function pulseButton(active) {
 
 // ── Integration with Portal ScrollTriggers ───────────────────────
 // Patches the fadeOverlay system to trigger voice on peak visibility
-export function hookScrollVoice() {
+function hookScrollVoice() {
   createToggle();
   
   // Observe all text overlays for visibility changes
@@ -247,12 +247,16 @@ export function hookScrollVoice() {
   });
 }
 
-// Auto-init when imported
-if (typeof window !== 'undefined') {
-  // Wait for DOM
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => setTimeout(hookScrollVoice, 1500));
-  } else {
-    setTimeout(hookScrollVoice, 1500);
+// Auto-init
+(function boot() {
+  if (typeof window === 'undefined') return;
+  function go() {
+    // Delay to let portal.js set up ScrollTriggers first
+    setTimeout(hookScrollVoice, 2000);
   }
-}
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', go);
+  } else {
+    go();
+  }
+})();
