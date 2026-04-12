@@ -16,7 +16,7 @@
  */
 
 const VOICE_CONFIG = {
-  apiBase: 'https://positioning-fwd-plc-wonderful.trycloudflare.com',
+  apiBase: 'https://certainly-showtimes-index-participation.trycloudflare.com',
   maxResponseWords: 50,
   speechRate: 0.88,
   speechPitch: 1.0,
