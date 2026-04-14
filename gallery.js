@@ -85,25 +85,46 @@ async function onClickSlot(slot) {
   const id = parseInt(slot.dataset.tokenId, 10);
   if (!id) return;
   slot.classList.add('loading');
+  console.log(`[gallery] Clicked A-Iconoclast #${id}, fetching metadata...`);
   const meta = await fetchMeta(id);
   slot.classList.remove('loading');
-  if (!meta?.description) return;
+  if (!meta) {
+    console.warn(`[gallery] No metadata returned for #${id}`);
+    return;
+  }
+  if (!meta.description) {
+    console.warn(`[gallery] Metadata for #${id} has no description:`, meta);
+    return;
+  }
+
+  console.log(`[gallery] #${id} "${meta.name}" — sending description as voice prompt:`, meta.description.slice(0, 100) + '...');
 
   // Dispatch to the voice player (defined in voice.js)
   if (typeof window.voicePlayer?.speak === 'function') {
     window.voicePlayer.speak(meta.description, meta.name, `a-iconoclast #${id}`);
+  } else {
+    console.warn('[gallery] window.voicePlayer.speak not available');
   }
 }
 
 async function fetchMeta(id) {
   if (metaCache.has(id)) return metaCache.get(id);
+  const url = `${GALLERY.metaBase}/${id}.json`;
+  console.log(`[gallery] Fetching metadata: ${url}`);
   try {
-    const r = await fetch(`${GALLERY.metaBase}/${id}.json`, { signal: AbortSignal.timeout(8000) });
-    if (!r.ok) return null;
+    const r = await fetch(url, { signal: AbortSignal.timeout(12000) });
+    if (!r.ok) {
+      console.warn(`[gallery] Metadata fetch failed: ${r.status} ${r.statusText}`);
+      return null;
+    }
     const d = await r.json();
+    console.log(`[gallery] Metadata for #${id}:`, d.name, '—', (d.description || '').slice(0, 80));
     metaCache.set(id, d);
     return d;
-  } catch { return null; }
+  } catch (e) {
+    console.warn(`[gallery] Metadata fetch error for #${id}:`, e.message);
+    return null;
+  }
 }
 
 // Boot

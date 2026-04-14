@@ -111,7 +111,11 @@ function clean(t) {
 
 // ── Core: send prompt to LLM, speak the result ───────────────────
 async function speak(prompt, title, sectionHint) {
-  if (!apiOnline) return;
+  console.log(`[voice] speak() called — api=${apiOnline}, title="${title}", hint="${sectionHint}", prompt="${(prompt||'').slice(0,80)}..."`);
+  if (!apiOnline) {
+    console.warn('[voice] API offline — skipping');
+    return;
+  }
 
   stop(); // cancel anything in progress
 
@@ -123,20 +127,25 @@ async function speak(prompt, title, sectionHint) {
   let full = '';
 
   try {
-    const res = await fetch(`${VOICE.apiBase}/api/voice`, {
+    const voiceUrl = `${VOICE.apiBase}/api/voice`;
+    const body = {
+      passage: prompt,
+      section: sectionHint || '',
+      context_hint: title
+        ? `The visitor is interacting with "${title}". Speak a brief, soothing reflection — one to three sentences. Do not repeat the passage back. Generate something new.`
+        : 'Speak a brief, soothing reflection — one to three sentences.',
+    };
+    console.log(`[voice] POST ${voiceUrl}`, body);
+
+    const res = await fetch(voiceUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        passage: prompt,
-        section: sectionHint || '',
-        context_hint: title
-          ? `The visitor is interacting with "${title}". Speak a brief, soothing reflection — one to three sentences. Do not repeat the passage back. Generate something new.`
-          : 'Speak a brief, soothing reflection — one to three sentences.',
-      }),
+      body: JSON.stringify(body),
       signal,
     });
 
-    if (!res.ok) { hidePlayer(); return; }
+    console.log(`[voice] Response status: ${res.status}`);
+    if (!res.ok) { console.warn(`[voice] Bad response: ${res.status}`); hidePlayer(); return; }
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
@@ -158,10 +167,13 @@ async function speak(prompt, title, sectionHint) {
     if (signal.aborted) return;
 
     const voice = clean(full);
-    if (voice.length < 10) { hidePlayer(); return; }
+    console.log(`[voice] Full response (${full.length} chars), cleaned (${voice.length} chars): "${voice.slice(0, 120)}..."`);
+    if (voice.length < 10) { console.warn('[voice] Response too short, skipping'); hidePlayer(); return; }
 
     setStatus('speaking…');
+    console.log('[voice] Starting SpeechSynthesis...');
     await browserSpeak(voice);
+    console.log('[voice] SpeechSynthesis finished');
 
   } catch (e) {
     if (e.name !== 'AbortError') console.log('[voice] Error:', e.message);
@@ -261,16 +273,25 @@ async function boot() {
   createPlayer();
 
   // Check API
+  console.log(`[voice] Checking API at ${VOICE.apiBase}/api/health`);
   apiOnline = await checkApi();
+  console.log(`[voice] API check result: ${apiOnline}`);
   if (!apiOnline) {
-    console.log('[voice] API offline — retrying in 15s');
+    console.log('[voice] API offline — retrying in 10s and 30s');
     setTimeout(async () => {
       apiOnline = await checkApi();
+      console.log(`[voice] Retry 1: ${apiOnline}`);
       if (apiOnline) {
         wireScrollVoice();
-        console.log('[voice] API came online (delayed)');
       }
-    }, 15000);
+    }, 10000);
+    setTimeout(async () => {
+      if (!apiOnline) {
+        apiOnline = await checkApi();
+        console.log(`[voice] Retry 2: ${apiOnline}`);
+        if (apiOnline) wireScrollVoice();
+      }
+    }, 30000);
   }
 
   wireOverlays();
