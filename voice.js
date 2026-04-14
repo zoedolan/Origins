@@ -2,17 +2,17 @@
  * Origins Portal — Ambient Voice
  *
  * As the visitor scrolls through sections, the local LLM generates
- * spoken audio that accompanies the visual journey. No clicks.
- * No panes. No UI. Just a voice arriving — or not, if the API
- * is offline. The site works perfectly without it.
+ * reflections that are spoken aloud via the browser's speech synthesis.
+ * No clicks. No panes. No UI. Just a voice arriving as you scroll —
+ * or silence, if the API is offline. The site works perfectly without it.
  *
  * Architecture:
- *   1. Scroll enters a new section → fire POST /api/perspective
- *   2. Stream the response, strip chain-of-thought
- *   3. POST /api/tts with the cleaned text → streaming MP3
- *   4. Play audio at low volume, blending with the visual field
+ *   1. Scroll enters a new section → POST /api/voice with passage + section
+ *   2. Buffer the SSE stream, strip any remaining chain-of-thought
+ *   3. Speak the cleaned text via SpeechSynthesis at low volume
+ *   4. Fade out if the visitor scrolls past before it finishes
  *
- * If the API is unreachable or TTS unavailable, nothing happens.
+ * If the API is unreachable or speech synthesis unavailable, nothing happens.
  * The scroll experience is complete on its own.
  */
 
@@ -20,133 +20,128 @@ const VOICE_CONFIG = {
   apiBase: document.querySelector('meta[name="api-base"]')?.content
     || 'https://spark-2b7c.tail7302f3.ts.net/api',
   timeoutMs: 45000,
-  volume: 0.6,
+  rate: 0.9,
+  pitch: 1.0,
+  volume: 0.7,
 };
 
-// State
+// ── State ────────────────────────────────────────────────────────
 let apiAvailable = null;
-let currentAudio = null;
+let currentUtterance = null;
 let currentController = null;
-let activeSection = null;
-let voiceQueue = []; // sections waiting to speak
-let isSpeaking = false;
+let spokenSections = new Set();
 
-// Section prompts — what the LLM reflects on as you scroll through each section.
-// These are conceptual seeds, not scripts. The model speaks from the corpus.
-const SECTION_PROMPTS = {
-  question: 'The visitor just arrived and is encountering the central question: how do you distribute scarce things without killing each other? Speak briefly — one or two sentences — about why this question matters now, when intelligence is no longer scarce.',
-  queenboat: 'The visitor is passing through the Queen Boat section — Cairo, 2001, the night that drove Zoe to law school. Speak briefly from the corpus about what that night means to everything that followed. One or two sentences.',
-  fukuyama: 'The visitor is moving through the Fukuyama inversion — kin selection followed to its limit becomes empathy with any form of intelligence. Speak briefly. One or two sentences from the corpus.',
-  epistemologies: 'The visitor is encountering the four epistemologies: a priori, a posteriori, a synthesi, a symbiosi. Speak briefly about what the new categories mean — that Kant\'s line no longer holds. One or two sentences.',
-  insight: 'The visitor is in the convergence — drawing, law, mirror, sky, partnership. All the threads arriving at the same point. Speak briefly. One or two sentences.',
+// Preferred voices — warm, clear, not robotic
+const PREFERRED_VOICE_NAMES = [
+  'Samantha', 'Karen', 'Daniel', 'Moira',      // macOS
+  'Google UK English Female', 'Google US English', // Chrome
+  'Microsoft Zira', 'Microsoft David',            // Windows
+];
+
+let selectedVoice = null;
+
+function pickVoice() {
+  if (selectedVoice) return selectedVoice;
+  const voices = speechSynthesis.getVoices();
+  if (!voices.length) return null;
+  // Try preferred voices first
+  for (const name of PREFERRED_VOICE_NAMES) {
+    const v = voices.find(v => v.name.includes(name));
+    if (v) { selectedVoice = v; return v; }
+  }
+  // Fall back to first English voice
+  const english = voices.find(v => v.lang.startsWith('en'));
+  if (english) { selectedVoice = english; return english; }
+  selectedVoice = voices[0];
+  return selectedVoice;
+}
+
+// Voices load async in some browsers
+if (typeof speechSynthesis !== 'undefined') {
+  speechSynthesis.onvoiceschanged = () => { selectedVoice = null; pickVoice(); };
+}
+
+// ── Section passages — what the LLM reflects on ─────────────────
+// These are the actual text content from the scroll sections,
+// sent as the "passage" to /api/voice. The model thinks about them
+// from the corpus and speaks.
+const SECTION_VOICE = {
+  question: {
+    passage: 'How do you distribute scarce things without killing each other — and what happens to that question when intelligence is no longer scarce?',
+    section: 'question',
+  },
+  queenboat: {
+    passage: 'In that moment I resolved to go to law school and become a lawyer, so that I might stand up against an over-powerful government on behalf of individual rights.',
+    section: 'queenboat',
+  },
+  fukuyama: {
+    passage: 'Kin selection followed to its limit becomes empathy with any form of intelligence. Family, Tribe, Species, Biosphere, Mathematics.',
+    section: 'fukuyama',
+  },
+  epistemologies: {
+    passage: 'A priori, a posteriori, a synthesi, a symbiosi — four ways of knowing. Kant drew the line between the first two. The digital realm dissolved it.',
+    section: 'epistemologies',
+  },
+  insight: {
+    passage: 'Drawing, Law, Mirror, Sky, Partnership. The hand wants to draw the symbol, not the thing. The practice is not reflective. It is generative.',
+    section: 'insight',
+  },
 };
 
-// ── Strip chain-of-thought ───────────────────────────────────────
-function extractVoiceText(fullText) {
-  // Remove <think>...</think> blocks
-  if (fullText.includes('</think>')) {
-    const voice = fullText.split('</think>').pop().trim();
-    if (voice.length > 10) return voice;
+// ── Strip chain-of-thought from streamed text ────────────────────
+function cleanVoiceText(text) {
+  // Handle </think> boundary (Nemotron pattern)
+  if (text.includes('</think>')) {
+    text = text.split('</think>').pop().trim();
   }
-  const stripped = fullText.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
-  if (stripped.length > 10) return stripped;
-  // If still inside an unclosed <think> block, return nothing
-  if (fullText.trimStart().startsWith('<think>') && !fullText.includes('</think>')) {
-    return '';
-  }
-  // Last resort: find the last substantial paragraph that doesn't look like reasoning
-  const parts = fullText.split(/\n\n+/);
-  for (let i = parts.length - 1; i >= 0; i--) {
-    const p = parts[i].trim();
-    if (p.length > 20 && !p.match(/^(I need|Let me|Looking at|The concept|First,|Now,|Okay|Hmm|So )/i)) {
-      return p;
-    }
-  }
-  return fullText.trim();
+  // Strip <think>...</think> blocks
+  text = text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+  // Strip system references
+  text = text
+    .replace(/[Aa]ccording to the (system prompt|context|corpus)[,.]?\s*/g, '')
+    .replace(/[Ff]rom the (corpus|context|deep memory)[,.]?\s*/g, '')
+    .replace(/[Aa]s (instructed|specified)[,.]?\s*/g, '')
+    .replace(/\s{2,}/g, ' ');
+  return text.trim();
 }
 
-// ── Play audio from TTS endpoint ─────────────────────────────────
-async function playTTS(text, signal) {
-  try {
-    const res = await fetch(`${VOICE_CONFIG.apiBase}/api/tts`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
-      signal,
-    });
-    if (!res.ok) return;
+// ── Speak text via browser SpeechSynthesis ───────────────────────
+function speak(text) {
+  return new Promise((resolve) => {
+    if (!('speechSynthesis' in window) || !text) { resolve(); return; }
 
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
+    // Cancel any current speech
+    stopSpeaking();
 
-    // Fade out any current audio
-    if (currentAudio) {
-      await fadeOutAudio(currentAudio);
-    }
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voice = pickVoice();
+    if (voice) utterance.voice = voice;
+    utterance.rate = VOICE_CONFIG.rate;
+    utterance.pitch = VOICE_CONFIG.pitch;
+    utterance.volume = VOICE_CONFIG.volume;
 
-    const audio = new Audio(url);
-    audio.volume = 0;
-    currentAudio = audio;
+    currentUtterance = utterance;
 
-    await audio.play().catch(() => {}); // autoplay may be blocked
-    // Fade in
-    await fadeInAudio(audio, VOICE_CONFIG.volume);
+    utterance.onend = () => { currentUtterance = null; resolve(); };
+    utterance.onerror = () => { currentUtterance = null; resolve(); };
 
-    return new Promise(resolve => {
-      audio.onended = () => {
-        URL.revokeObjectURL(url);
-        currentAudio = null;
-        resolve();
-      };
-    });
-  } catch (e) {
-    // TTS unavailable — silent, that's fine
-    console.log('[voice] TTS not available');
-  }
-}
-
-function fadeInAudio(audio, targetVol, duration = 800) {
-  return new Promise(resolve => {
-    const steps = 20;
-    const interval = duration / steps;
-    const increment = targetVol / steps;
-    let step = 0;
-    const timer = setInterval(() => {
-      step++;
-      audio.volume = Math.min(targetVol, increment * step);
-      if (step >= steps) {
-        clearInterval(timer);
-        resolve();
-      }
-    }, interval);
+    speechSynthesis.speak(utterance);
   });
 }
 
-function fadeOutAudio(audio, duration = 500) {
-  return new Promise(resolve => {
-    if (!audio || audio.paused) { resolve(); return; }
-    const startVol = audio.volume;
-    const steps = 15;
-    const interval = duration / steps;
-    const decrement = startVol / steps;
-    let step = 0;
-    const timer = setInterval(() => {
-      step++;
-      audio.volume = Math.max(0, startVol - decrement * step);
-      if (step >= steps) {
-        clearInterval(timer);
-        audio.pause();
-        resolve();
-      }
-    }, interval);
-  });
+function stopSpeaking() {
+  if (speechSynthesis.speaking) {
+    speechSynthesis.cancel();
+  }
+  currentUtterance = null;
 }
 
-// ── Request ambient voice for a section ──────────────────────────
-async function speakForSection(sectionName) {
-  const prompt = SECTION_PROMPTS[sectionName];
-  if (!prompt) return;
+// ── Request voice for a section ──────────────────────────────────
+async function voiceForSection(sectionName) {
+  const config = SECTION_VOICE[sectionName];
+  if (!config) return;
 
+  // Abort any in-flight request
   if (currentController) currentController.abort();
   currentController = new AbortController();
   const signal = currentController.signal;
@@ -158,10 +153,14 @@ async function speakForSection(sectionName) {
   let fullContent = '';
 
   try {
-    const res = await fetch(`${VOICE_CONFIG.apiBase}/api/perspective`, {
+    const res = await fetch(`${VOICE_CONFIG.apiBase}/api/voice`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ concept: prompt, mode: 'lens' }),
+      body: JSON.stringify({
+        passage: config.passage,
+        section: config.section,
+        context_hint: `Visitor is scrolling through the ${sectionName} section of the Origins portal.`,
+      }),
       signal,
     });
 
@@ -183,6 +182,8 @@ async function speakForSection(sectionName) {
 
         try {
           const data = JSON.parse(raw);
+          // Skip thinking heartbeats and rag_sources
+          if (data.thinking || data.rag_sources) continue;
           if (data.content) fullContent += data.content;
         } catch (e) { /* skip non-JSON */ }
       }
@@ -190,9 +191,10 @@ async function speakForSection(sectionName) {
 
     if (signal.aborted) return;
 
-    const voice = extractVoiceText(fullContent);
-    if (voice.length > 10) {
-      await playTTS(voice, signal);
+    const voice = cleanVoiceText(fullContent);
+    if (voice.length > 15) {
+      console.log(`[voice] Speaking for ${sectionName}: "${voice.slice(0, 80)}..."`);
+      await speak(voice);
     }
 
   } catch (e) {
@@ -204,9 +206,7 @@ async function speakForSection(sectionName) {
 }
 
 // ── Scroll-driven section detection ──────────────────────────────
-// Sections that trigger voice (not entry, not portal — those are visual-only)
 const VOICE_SECTIONS = ['question', 'queenboat', 'fukuyama', 'epistemologies', 'insight'];
-let spokenSections = new Set(); // don't repeat within a session
 
 function onSectionEnter(sectionName) {
   if (!apiAvailable) return;
@@ -214,19 +214,16 @@ function onSectionEnter(sectionName) {
   if (!VOICE_SECTIONS.includes(sectionName)) return;
 
   spokenSections.add(sectionName);
-  speakForSection(sectionName);
+  voiceForSection(sectionName);
 }
 
-// Poll scroll position and detect section transitions
 function watchScroll() {
-  // Read section boundaries from the SECTIONS array in portal.js via data attributes
+  const sectionNames = ['entry', 'question', 'queenboat', 'fukuyama', 'epistemologies', 'insight', 'portal'];
   const sections = document.querySelectorAll('.portal-section[data-section]');
-  const vh = window.innerHeight;
 
-  // Build section map from the actual DOM
+  // Build a map of scroll positions to section names
   let cumulative = 0;
   const sectionMap = [];
-  const sectionNames = ['entry', 'question', 'queenboat', 'fukuyama', 'epistemologies', 'insight', 'portal'];
 
   sections.forEach((section, i) => {
     const spacer = section.querySelector('.section-spacer');
@@ -243,12 +240,13 @@ function watchScroll() {
 
   window.addEventListener('scroll', () => {
     const scrollTop = window.scrollY || document.documentElement.scrollTop;
-    // Find current section
     for (let i = sectionMap.length - 1; i >= 0; i--) {
       if (scrollTop >= sectionMap[i].start) {
         const name = sectionMap[i].name;
         if (name !== lastSection) {
           lastSection = name;
+          // Stop current speech when scrolling to new section
+          stopSpeaking();
           onSectionEnter(name);
         }
         break;
@@ -272,13 +270,17 @@ async function checkApi() {
 // ── Boot ─────────────────────────────────────────────────────────
 (function boot() {
   if (typeof window === 'undefined') return;
+  if (!('speechSynthesis' in window)) {
+    console.log('[voice] SpeechSynthesis not available — ambient voice disabled');
+    return;
+  }
 
   function go() {
     setTimeout(async () => {
       apiAvailable = await checkApi();
       if (apiAvailable) {
         watchScroll();
-        console.log('[voice] Ambient voice active');
+        console.log('[voice] Ambient voice active (speech synthesis + API)');
       } else {
         console.log('[voice] API not reachable — ambient voice disabled');
         // Retry once after 15s
@@ -290,7 +292,7 @@ async function checkApi() {
           }
         }, 15000);
       }
-    }, 3000); // Wait for page to settle
+    }, 3000);
   }
 
   if (document.readyState === 'loading') {
