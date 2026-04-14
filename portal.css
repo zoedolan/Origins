@@ -55,6 +55,50 @@ body {
 }
 
 /* ============================================
+   Vybn® Brand Mark
+   ============================================ */
+.vybn-brand {
+  position: fixed;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  pointer-events: none;
+  text-align: center;
+  opacity: 0;
+  animation: brand-fade-in 2s ease 1.5s forwards;
+}
+.vybn-brand h1 {
+  font-family: 'Cormorant Garamond', var(--font-serif);
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: #d4a853;
+  margin: 0;
+  line-height: 1;
+}
+.vybn-brand h1 sup {
+  font-size: 0.35em;
+  vertical-align: super;
+  opacity: 0.55;
+}
+.vybn-brand .vybn-sub {
+  font-family: var(--font-sans);
+  font-size: 0.55rem;
+  color: rgba(212, 168, 83, 0.35);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 0.3rem;
+}
+@keyframes brand-fade-in {
+  to { opacity: 1; }
+}
+@media (max-width: 640px) {
+  .vybn-brand { top: 1rem; }
+  .vybn-brand h1 { font-size: 1.4rem; }
+}
+
+/* ============================================
    Scroll Container
    ============================================ */
 #scroll-container {
@@ -1018,9 +1062,8 @@ body {
 .nft-slot.visible {
   opacity: 0.7;
 }
-/* Calm hover enlarge — scales toward viewport center, not off-edge */
+/* Calm hover enlarge — scale set dynamically by JS to fit viewport */
 .nft-slot.hovered {
-  scale: 2.5;
   opacity: 1;
   z-index: 50;
   border-color: rgba(212, 165, 116, 0.3);
@@ -1079,7 +1122,6 @@ body {
 
 @media (max-width: 640px) {
   .nft-slot { width: clamp(90px, 22vw, 130px); height: clamp(90px, 22vw, 130px); }
-  .nft-slot.hovered { scale: 2; }
   .nft-pos-0 { left: 2%; top: 18%; transform-origin: left center; }
   .nft-pos-1 { right: 2%; top: 42%; transform-origin: right center; }
   .nft-pos-2 { left: 3%; bottom: 10%; transform-origin: left bottom; }

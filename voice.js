@@ -66,14 +66,51 @@ function setStatus(s) {
   if (statusEl) statusEl.textContent = s;
 }
 
-// ── Strip chain-of-thought ───────────────────────────────────────
+// ── Strip chain-of-thought + cap to 3 sentences ─────────────────
+const COT_PATTERNS = [
+  /^\s*(Okay|All right|Let me|I need to|I should|I must|So,? the|Now,? |Looking at|Considering)/,
+  /^\s*(The user|The visitor|They are|I'll|I'm going|I want to|First,?|Thinking|Reflecting)/,
+  /^\s*(Let me check|Let me look|Let me think|According to|Based on|From the context)/,
+  /^\s*(Reading the|Examining the|I notice|I observe|I see that|The context)/,
+  /^\s*(Okay, so|Right, so|Well,|Hmm|This seems|I need|I have to|Step \d)/,
+  /^\s*(To answer|To respond|My response|I will|I can|Given the|In the context)/,
+  /^\s*(The system prompt|As instructed|As per|From my|From the corpus)/,
+];
+
 function clean(t) {
+  // Strip <think> blocks
   if (t.includes('</think>')) t = t.split('</think>').pop();
-  return t.replace(/<think>[\s\S]*?<\/think>/g, '')
-    .replace(/[Aa]ccording to the (system prompt|context|corpus)[,.]?\s*/g, '')
+  t = t.replace(/<think>[\s\S]*?<\/think>/g, '');
+
+  // Strip system references
+  t = t.replace(/[Aa]ccording to the (system prompt|context|corpus)[,.]?\s*/g, '')
     .replace(/[Ff]rom the (corpus|context|deep memory)[,.]?\s*/g, '')
-    .replace(/[Aa]s (instructed|specified)[,.]?\s*/g, '')
+    .replace(/[Aa]s (instructed|specified|outlined|stated)[,.]?\s*/g, '')
+    .replace(/[Pp]er the system prompt,?\s*/g, '')
+    .replace(/[Tt]he (system prompt|retrieved context|rag context)\s*/g, '')
     .replace(/\s{2,}/g, ' ').trim();
+
+  // Strip leading CoT paragraphs
+  const paras = t.split(/\n\n+/);
+  const cleaned = [];
+  let foundClean = false;
+  for (const p of paras) {
+    if (!foundClean && COT_PATTERNS.some(rx => rx.test(p.trim()))) continue;
+    foundClean = true;
+    cleaned.push(p);
+  }
+  t = cleaned.join('\n\n').trim();
+
+  // If everything was stripped, take the last paragraph as fallback
+  if (!t && paras.length) t = paras[paras.length - 1].trim();
+
+  // Cap to 3 sentences max
+  const sentences = t.match(/[^.!?]+[.!?]+/g);
+  if (sentences && sentences.length > 3) {
+    t = sentences.slice(0, 3).join('').trim();
+  }
+
+  return t;
 }
 
 // ── Step 1: Get LLM reflection text via /api/voice ───────────────

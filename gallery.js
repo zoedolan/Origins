@@ -85,10 +85,12 @@ function init() {
     slot.addEventListener('mouseenter', () => {
       hoveredSlot = slot;
       slot.classList.add('hovered');
+      computeHoverScale(slot);
     });
     slot.addEventListener('mouseleave', () => {
       if (hoveredSlot === slot) hoveredSlot = null;
       slot.classList.remove('hovered');
+      slot.style.scale = '';
     });
     slot.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -183,6 +185,29 @@ async function fetchMeta(id) {
     console.warn(`[gallery] Metadata error #${id}:`, e.message);
     return null;
   }
+}
+
+// ── Viewport-aware hover scale ──────────────────────────────────
+
+function computeHoverScale(slot) {
+  const rect = slot.getBoundingClientRect();
+  const slotW = rect.width;
+  const slotH = rect.height;
+  if (!slotW || !slotH) return;
+
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  // Target: expanded image fills ~55% of the smaller viewport dimension
+  // On mobile: fill ~70%
+  const isMobile = vw < 640;
+  const targetFrac = isMobile ? 0.70 : 0.55;
+  const targetSize = Math.min(vw, vh) * targetFrac;
+  const s = Math.min(targetSize / slotW, targetSize / slotH);
+
+  // Clamp: at least 1.5x, at most 4x
+  const clamped = Math.max(1.5, Math.min(4, s));
+  slot.style.scale = clamped.toFixed(2);
 }
 
 // Boot
