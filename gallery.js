@@ -1,13 +1,9 @@
 /**
  * Origins Portal — A-Iconoclast Gallery
  *
- * 139 images from the A-Iconoclast collection cycle through a few
- * floating positions as the visitor scrolls. Click any image to
- * send its metadata to the LLM as a prompt for a fresh voice
- * reflection — the metadata is the seed, not the script.
- *
- * Hover: image glides toward the center of the viewport and enlarges
- * to near full-view. Release: it drifts back to its floating position.
+ * 139 images cycle through 3 floating positions as the visitor scrolls.
+ * Hover: image glides to viewport center and enlarges.
+ * Click: fetch IPFS metadata, send as prompt to voice player.
  */
 
 const GALLERY = {
@@ -17,13 +13,52 @@ const GALLERY = {
 };
 
 const metaCache = new Map();
-
-// 3 floating slots — positioned via CSS
 const SLOT_COUNT = 3;
 let slotEls = [];
 let currentBase = 1;
 let scrollTicking = false;
-let expandedSlot = null; // track which slot is currently expanded
+let expandedSlot = null;
+let collapsingSlot = null;   // slot currently animating back — drift must not touch
+let driftRAF = null;
+
+// ── Gentle drift via JS (no CSS animations to conflict) ──────────
+const driftState = [];
+const DRIFT_RANGE = 8; // pixels
+
+function startDrift() {
+  for (let i = 0; i < SLOT_COUNT; i++) {
+    driftState[i] = {
+      x: 0, y: 0,
+      tx: (Math.random() - 0.5) * DRIFT_RANGE * 2,
+      ty: (Math.random() - 0.5) * DRIFT_RANGE * 2,
+      speed: 0.003 + Math.random() * 0.004,
+    };
+  }
+
+  function tick() {
+    for (let i = 0; i < SLOT_COUNT; i++) {
+      const s = driftState[i];
+      const el = slotEls[i]?.slot;
+      if (!el || el === expandedSlot || el === collapsingSlot) continue;
+
+      // Ease toward target
+      s.x += (s.tx - s.x) * s.speed;
+      s.y += (s.ty - s.y) * s.speed;
+
+      // Pick new target when close
+      if (Math.abs(s.tx - s.x) < 0.5 && Math.abs(s.ty - s.y) < 0.5) {
+        s.tx = (Math.random() - 0.5) * DRIFT_RANGE * 2;
+        s.ty = (Math.random() - 0.5) * DRIFT_RANGE * 2;
+      }
+
+      el.style.transform = `translate(${s.x.toFixed(1)}px, ${s.y.toFixed(1)}px)`;
+    }
+    driftRAF = requestAnimationFrame(tick);
+  }
+  driftRAF = requestAnimationFrame(tick);
+}
+
+// ── Init ─────────────────────────────────────────────────────────
 
 function init() {
   const wrap = document.createElement('div');
@@ -43,21 +78,31 @@ function init() {
     const num = document.createElement('span');
     num.className = 'nft-num';
 
-    // Title overlay shown on hover
     const title = document.createElement('span');
     title.className = 'nft-title';
 
     slot.append(img, num, title);
-    slot.addEventListener('click', () => onClickSlot(slot));
-    slot.addEventListener('mouseenter', () => expandSlot(slot));
-    slot.addEventListener('mouseleave', () => collapseSlot(slot));
+    // Debounced hover — prevents rapid expand/collapse from drift movement
+    let hoverTimer = null;
+    slot.addEventListener('mouseenter', () => {
+      clearTimeout(hoverTimer);
+      hoverTimer = setTimeout(() => expandSlot(slot), 80);
+    });
+    slot.addEventListener('mouseleave', () => {
+      clearTimeout(hoverTimer);
+      collapseSlot(slot);
+    });
+    slot.addEventListener('click', (e) => {
+      e.stopPropagation();
+      onClickSlot(slot);
+    });
     wrap.appendChild(slot);
     slotEls.push({ slot, img, num, title });
   }
 
   document.body.appendChild(wrap);
 
-  // Add the scrim for expanded state
+  // Scrim
   const scrim = document.createElement('div');
   scrim.className = 'nft-scrim';
   scrim.addEventListener('click', () => { if (expandedSlot) collapseSlot(expandedSlot); });
@@ -65,7 +110,10 @@ function init() {
 
   fillSlots(1);
   window.addEventListener('scroll', onScroll, { passive: true });
+  startDrift();
 }
+
+// ── Fill slots with images ───────────────────────────────────────
 
 function fillSlots(base) {
   currentBase = Math.max(1, Math.min(base, GALLERY.total - SLOT_COUNT + 1));
@@ -79,7 +127,6 @@ function fillSlots(base) {
     s.img.alt = `A-Iconoclast #${id}`;
     s.num.textContent = `#${id}`;
     s.slot.dataset.tokenId = id;
-    // Show title if we have cached metadata
     const cached = metaCache.get(id);
     s.title.textContent = cached?.name || '';
     setTimeout(() => s.slot.classList.add('visible'), 80 + i * 150);
@@ -90,136 +137,139 @@ function fillSlots(base) {
 
 function expandSlot(slot) {
   if (expandedSlot === slot) return;
+  if (expandedSlot) collapseSlot(expandedSlot);
   expandedSlot = slot;
+  collapsingSlot = null; // cancel any in-progress collapse on this slot
 
-  // Kill drift animation completely — it conflicts with transform
-  slot.style.animation = 'none';
-  slot.style.translate = 'none';
+  // Freeze drift position so we calculate from a stable point
+  const idx = slotEls.findIndex(s => s.slot === slot);
+  const d = driftState[idx] || { x: 0, y: 0 };
 
-  // Force layout so the browser registers the animation stop before we read position
-  void slot.offsetHeight;
+  // Get the slot's CSS-positioned origin (without drift)
+  // We temporarily clear transform to read the true rect
+  const savedTransform = slot.style.transform;
+  slot.style.transition = 'none';
+  slot.style.transform = 'none';
+  const baseRect = slot.getBoundingClientRect();
+  slot.style.transform = savedTransform;
 
-  const rect = slot.getBoundingClientRect();
-  const slotCx = rect.left + rect.width / 2;
-  const slotCy = rect.top + rect.height / 2;
-
+  // Calculate offset from slot center to viewport center
+  const slotCx = baseRect.left + baseRect.width / 2;
+  const slotCy = baseRect.top + baseRect.height / 2;
   const vpCx = window.innerWidth / 2;
   const vpCy = window.innerHeight / 2;
-
-  // How far to move to reach center
   const dx = vpCx - slotCx;
   const dy = vpCy - slotCy;
 
-  // Target size: 65% of the smaller viewport dimension
-  const targetSize = Math.min(window.innerWidth, window.innerHeight) * 0.65;
-  const currentSize = rect.width;
-  const scaleFactor = targetSize / currentSize;
+  // Scale to 60% of smaller viewport dimension
+  const targetSize = Math.min(window.innerWidth, window.innerHeight) * 0.6;
+  const scale = targetSize / baseRect.width;
 
-  slot.style.transition = 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease, box-shadow 0.4s ease';
-  slot.style.transform = `translate(${dx}px, ${dy}px) scale(${scaleFactor})`;
+  // Force reflow before enabling transition
+  void slot.offsetHeight;
+  slot.style.transition = 'transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease, box-shadow 0.3s ease';
+  slot.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`;
   slot.style.opacity = '1';
   slot.style.zIndex = '50';
-  slot.style.borderRadius = '10px';
   slot.style.boxShadow = '0 12px 80px rgba(212, 165, 116, 0.25), 0 0 120px rgba(0, 0, 0, 0.6)';
   slot.classList.add('expanded');
-
-  // Show scrim
   document.querySelector('.nft-scrim')?.classList.add('active');
 
-  // Prefetch metadata for the title
+  // Prefetch title
   const id = parseInt(slot.dataset.tokenId, 10);
-  if (id) {
-    fetchMeta(id).then(meta => {
-      if (meta?.name) {
-        const titleEl = slot.querySelector('.nft-title');
-        if (titleEl) titleEl.textContent = meta.name;
-      }
-    });
-  }
+  if (id) fetchMeta(id).then(m => {
+    if (m?.name) {
+      const t = slot.querySelector('.nft-title');
+      if (t) t.textContent = m.name;
+    }
+  });
 }
 
 function collapseSlot(slot) {
   if (expandedSlot !== slot) return;
   expandedSlot = null;
+  collapsingSlot = slot; // protect from drift during animation
 
-  slot.style.transition = 'transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s ease, box-shadow 0.3s ease';
-  slot.style.transform = '';
+  // Get drift position to return to
+  const idx = slotEls.findIndex(s => s.slot === slot);
+  const d = driftState[idx] || { x: 0, y: 0 };
+
+  slot.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s ease, box-shadow 0.3s ease';
+  slot.style.transform = `translate(${d.x.toFixed(1)}px, ${d.y.toFixed(1)}px)`;
   slot.style.opacity = '';
   slot.style.zIndex = '';
-  slot.style.borderRadius = '';
   slot.style.boxShadow = '';
   slot.classList.remove('expanded');
-
-  // Restore drift animation after collapse transition finishes
-  setTimeout(() => {
-    slot.style.animation = '';
-    slot.style.translate = '';
-  }, 500);
-
-  // Hide scrim
   document.querySelector('.nft-scrim')?.classList.remove('active');
+
+  // Release to drift after animation completes
+  slot.addEventListener('transitionend', function onEnd(e) {
+    if (e.propertyName !== 'transform') return;
+    slot.removeEventListener('transitionend', onEnd);
+    if (collapsingSlot === slot) {
+      collapsingSlot = null;
+      slot.style.transition = 'none'; // let JS drift take over cleanly
+    }
+  });
 }
+
+// ── Scroll ───────────────────────────────────────────────────────
 
 function onScroll() {
   if (scrollTicking) return;
   scrollTicking = true;
   requestAnimationFrame(() => {
-    // Collapse any expanded image on scroll
     if (expandedSlot) collapseSlot(expandedSlot);
-
     const max = document.documentElement.scrollHeight - window.innerHeight;
     const p = Math.max(0, Math.min(1, window.scrollY / max));
     const target = Math.floor(p * (GALLERY.total - SLOT_COUNT)) + 1;
     if (Math.abs(target - currentBase) >= SLOT_COUNT) fillSlots(target);
-    // Hide in entry section
     const wrap = document.querySelector('.nft-wrap');
     if (wrap) wrap.classList.toggle('hidden', p < 0.04);
     scrollTicking = false;
   });
 }
 
+// ── Click → voice ────────────────────────────────────────────────
+
 async function onClickSlot(slot) {
   const id = parseInt(slot.dataset.tokenId, 10);
   if (!id) return;
+
+  // Stop any in-progress voice FIRST
+  if (typeof window.voicePlayer?.stop === 'function') {
+    window.voicePlayer.stop();
+  }
+
   slot.classList.add('loading');
-  console.log(`[gallery] Clicked A-Iconoclast #${id}, fetching metadata...`);
+  console.log(`[gallery] Clicked #${id}, fetching metadata...`);
   const meta = await fetchMeta(id);
   slot.classList.remove('loading');
-  if (!meta) {
-    console.warn(`[gallery] No metadata returned for #${id}`);
-    return;
-  }
-  if (!meta.description) {
-    console.warn(`[gallery] Metadata for #${id} has no description:`, meta);
+
+  if (!meta?.description) {
+    console.warn(`[gallery] No description for #${id}`);
     return;
   }
 
-  console.log(`[gallery] #${id} "${meta.name}" — sending description as voice prompt:`, meta.description.slice(0, 100) + '...');
-
-  // Dispatch to the voice player (defined in voice.js)
+  console.log(`[gallery] #${id} "${meta.name}" → voice prompt`);
   if (typeof window.voicePlayer?.speak === 'function') {
     window.voicePlayer.speak(meta.description, meta.name, `a-iconoclast #${id}`);
-  } else {
-    console.warn('[gallery] window.voicePlayer.speak not available');
   }
 }
+
+// ── Metadata fetch ───────────────────────────────────────────────
 
 async function fetchMeta(id) {
   if (metaCache.has(id)) return metaCache.get(id);
   const url = `${GALLERY.metaBase}/${id}.json`;
-  console.log(`[gallery] Fetching metadata: ${url}`);
   try {
     const r = await fetch(url, { signal: AbortSignal.timeout(12000) });
-    if (!r.ok) {
-      console.warn(`[gallery] Metadata fetch failed: ${r.status} ${r.statusText}`);
-      return null;
-    }
+    if (!r.ok) return null;
     const d = await r.json();
-    console.log(`[gallery] Metadata for #${id}:`, d.name, '—', (d.description || '').slice(0, 80));
     metaCache.set(id, d);
     return d;
   } catch (e) {
-    console.warn(`[gallery] Metadata fetch error for #${id}:`, e.message);
+    console.warn(`[gallery] Metadata error #${id}:`, e.message);
     return null;
   }
 }

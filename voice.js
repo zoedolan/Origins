@@ -27,6 +27,8 @@ let closeBtn = null;
 let controller = null;
 let apiOnline = null;
 let currentAudio = null;
+let isSpeaking = false;       // mutex: only one voice pipeline at a time
+let lastClickSpeak = 0;       // timestamp of last click-triggered speak
 
 // ── Create the player UI ─────────────────────────────────────────
 function createPlayer() {
@@ -145,15 +147,23 @@ function playAudio(url) {
 }
 
 // ── Core: send prompt to LLM, then speak via ElevenLabs ──────────
-async function speak(prompt, title, sectionHint) {
-  console.log(`[voice] speak() — api=${apiOnline}, title="${title}", prompt="${(prompt||'').slice(0,60)}…"`);
+async function speak(prompt, title, sectionHint, { fromClick = false } = {}) {
+  console.log(`[voice] speak() — api=${apiOnline}, click=${fromClick}, title="${title}", prompt="${(prompt||'').slice(0,60)}…"`);
   if (!apiOnline) {
     console.warn('[voice] API offline — skipping');
     return;
   }
 
+  // If already speaking, a click overrides; a scroll does not.
+  if (isSpeaking && !fromClick) {
+    console.log('[voice] Already speaking — scroll voice deferred');
+    return;
+  }
+
   stop(); // cancel anything in progress
 
+  if (fromClick) lastClickSpeak = Date.now();
+  isSpeaking = true;
   controller = new AbortController();
   const signal = controller.signal;
 
@@ -181,6 +191,7 @@ async function speak(prompt, title, sectionHint) {
   } catch (e) {
     if (e.name !== 'AbortError') console.log('[voice] Error:', e.message);
   } finally {
+    isSpeaking = false;
     hidePlayer();
     controller = null;
   }
@@ -189,6 +200,7 @@ async function speak(prompt, title, sectionHint) {
 function stop() {
   controller?.abort();
   controller = null;
+  isSpeaking = false;
   if (currentAudio) {
     currentAudio.pause();
     currentAudio = null;
@@ -215,7 +227,7 @@ function wireOverlays() {
       if (text.length < 5) return;
       const heading = overlay.querySelector('h3, .insight-domain');
       const title = heading ? heading.textContent.trim() : '';
-      speak(text, title, overlay.id || '');
+      speak(text, title, overlay.id || '', { fromClick: true });
     });
   });
 }
@@ -254,8 +266,13 @@ function wireScrollVoice() {
           last = name;
           const sp = SECTION_PROMPTS[name];
           if (sp && !spokenSections.has(name) && apiOnline) {
-            spokenSections.add(name);
-            speak(sp.prompt, sp.title, name);
+            // Don't fire scroll voice within 5s of a click-triggered voice
+            if (Date.now() - lastClickSpeak < 5000) {
+              console.log(`[voice] Scroll voice suppressed (recent click)`);
+            } else {
+              spokenSections.add(name);
+              speak(sp.prompt, sp.title, name, { fromClick: false });
+            }
           }
         }
         break;
