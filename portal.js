@@ -25,7 +25,7 @@ const CONFIG = {
     if (isMobile) return 2000;
     return 10000;
   },
-  totalScrollHeight: 1600, // in vh units
+  totalScrollHeight: 2300, // in vh units
   backgroundColor: 0x0a0a0f,
   cameraZ: 5,
   cameraNear: 0.1,
@@ -50,11 +50,11 @@ let frameCount = 0;
 const SECTIONS = [
   { name: 'entry',          start: 0,    end: 100 },
   { name: 'question',       start: 100,  end: 300 },
-  { name: 'queenboat',      start: 300,  end: 500 },
-  { name: 'fukuyama',       start: 500,  end: 700 },
-  { name: 'epistemologies',  start: 700,  end: 1100 },
-  { name: 'insight',        start: 1100, end: 1400 },
-  { name: 'portal',         start: 1400, end: 1600 },
+  { name: 'queenboat',      start: 300,  end: 700 },
+  { name: 'fukuyama',       start: 700,  end: 1000 },
+  { name: 'epistemologies',  start: 1000, end: 1600 },
+  { name: 'insight',        start: 1600, end: 2000 },
+  { name: 'portal',         start: 2000, end: 2300 },
 ];
 
 // ============================================
@@ -200,44 +200,30 @@ function setupScrollTriggers() {
     });
   }
   
-  // --- Section 2: Queen Boat texts (SLOW — let people read) ---
-  // Each text gets ~1.5vh of full visibility before fading
-  fadeOverlay('qt-1', 2.6, 2.9, 3.8);
-  fadeOverlay('qt-2', 3.3, 3.6, 4.4);
-  fadeOverlay('qt-3', 3.9, 4.2, 5.0);
-  fadeOverlay('qt-4', 4.4, 4.7, 5.5);
+  // --- Section 2: Queen Boat — single quote, held long enough to read (3.0–7.0) ---
+  fadeOverlay('qt-1', 3.5, 4.0, 6.5);
   
-  // --- Section 3: Cascade labels (each visible for full scroll beat) ---
-  fadeOverlay('cl-family',      5.0, 5.2, 5.7);
-  fadeOverlay('cl-tribe',       5.4, 5.6, 6.05);
-  fadeOverlay('cl-species',     5.75, 5.95, 6.4);
-  fadeOverlay('cl-biosphere',   6.1, 6.35, 6.8);
-  fadeOverlay('cl-mathematics', 6.5, 6.8, 7.35);
+  // --- Section 3: Fukuyama cascade labels (7.0–10.0) ---
+  fadeOverlay('cl-family',      7.2, 7.4, 7.9);
+  fadeOverlay('cl-tribe',       7.7, 7.9, 8.4);
+  fadeOverlay('cl-species',     8.2, 8.4, 8.9);
+  fadeOverlay('cl-biosphere',   8.7, 8.9, 9.4);
+  fadeOverlay('cl-mathematics', 9.2, 9.5, 10.1);
   
-  // --- Vybn Law thread 1: after Mathematics cascade, before epistemologies ---
-  fadeOverlay('vl-thread-1', 6.8, 7.0, 7.5);
+  // --- Section 4: Epistemology names (10.0–16.0) ---
+  fadeOverlay('ep-apriori',     10.5, 10.8, 11.8);
+  fadeOverlay('ep-aposteriori', 11.5, 11.8, 12.8);
+  fadeOverlay('ep-asynthesi',   12.5, 12.8, 13.8);
+  fadeOverlay('ep-asymbiosi',   13.5, 13.8, 15.5);
   
-  // --- Section 4: Epistemology texts (generous — these are ideas, not flash cards) ---
-  fadeOverlay('ep-apriori',     7.2, 7.5, 8.4);
-  fadeOverlay('ep-aposteriori', 8.0, 8.3, 9.2);
-  fadeOverlay('ep-asynthesi',   8.8, 9.1, 9.9);
-  
-  // --- Vybn Law thread 3: between a synthesi and a symbiosi ---
-  fadeOverlay('vl-thread-3', 9.5, 9.7, 10.15);
-  
-  fadeOverlay('ep-asymbiosi',   9.85, 10.15, 11.0);
-  
-  // --- Vybn Law thread 2: during insight section ---
-  fadeOverlay('vl-thread-2', 10.7, 10.95, 11.5);
-  
-  // --- Section 5: Insight lines (cumulative reveal) ---
+  // --- Section 5: Insight lines (16.0–20.0, cumulative reveal) ---
   var insightOverlay = document.getElementById('overlay-insight');
   if (insightOverlay) {
     // Fade in the container
     ScrollTrigger.create({
       trigger: document.body,
-      start: 11 * vh + 'px top',
-      end: 11.5 * vh + 'px top',
+      start: 16.3 * vh + 'px top',
+      end: 16.8 * vh + 'px top',
       scrub: 0.5,
       onUpdate: function(self) {
         insightOverlay.style.opacity = self.progress;
@@ -246,23 +232,23 @@ function setupScrollTriggers() {
     // Fade out
     ScrollTrigger.create({
       trigger: document.body,
-      start: 13.5 * vh + 'px top',
-      end: 14 * vh + 'px top',
+      start: 19.2 * vh + 'px top',
+      end: 19.7 * vh + 'px top',
       scrub: 0.5,
       onUpdate: function(self) {
         insightOverlay.style.opacity = 1 - self.progress;
       }
     });
     
-    // Each line appears sequentially — wider spacing so they can be read
+    // Each line appears sequentially — generous spacing for reading
     ['il-1', 'il-2', 'il-3', 'il-4', 'il-5'].forEach(function(id, idx) {
       var el = document.getElementById(id);
       if (!el) return;
-      var startPx = (11.3 + idx * 0.5) * vh;
+      var startPx = (16.5 + idx * 0.6) * vh;
       ScrollTrigger.create({
         trigger: document.body,
         start: startPx + 'px top',
-        end: (startPx + 0.35 * vh) + 'px top',
+        end: (startPx + 0.4 * vh) + 'px top',
         scrub: 0.5,
         onEnter: function() { el.classList.add('visible'); },
         onLeaveBack: function() { el.classList.remove('visible'); },
@@ -270,13 +256,13 @@ function setupScrollTriggers() {
     });
   }
   
-  // --- Section 6: Portal final ---
+  // --- Section 6: Portal final (20.0–23.0) ---
   var portalFinal = document.getElementById('overlay-portal');
   if (portalFinal) {
     ScrollTrigger.create({
       trigger: document.body,
-      start: 14.3 * vh + 'px top',
-      end: 15 * vh + 'px top',
+      start: 20.5 * vh + 'px top',
+      end: 21.5 * vh + 'px top',
       scrub: 1,
       onUpdate: function(self) {
         portalFinal.style.opacity = self.progress;

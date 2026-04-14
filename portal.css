@@ -737,21 +737,8 @@ body {
    Voice — ephemeral whisper, not a dialog box
    ============================================ */
 
-/* Make text overlays clickable when visible */
-.text-overlay.voice-enabled {
-  cursor: pointer;
-  pointer-events: auto;
-}
-
-.text-overlay.voice-enabled:hover p,
-.text-overlay.voice-enabled:hover span,
-.text-overlay.voice-enabled:hover h3 {
-  text-shadow:
-    0 0 40px rgba(212, 165, 116, 0.25),
-    0 0 80px rgba(10, 10, 15, 0.8),
-    0 2px 4px rgba(0, 0, 0, 0.9);
-  transition: text-shadow 0.4s ease;
-}
+/* Text overlays are content for reading, not interactive elements.
+   Voice interaction lives on talk.html. */
 
 /* The voice whisper — centered, floating, ephemeral */
 .voice-pane {
