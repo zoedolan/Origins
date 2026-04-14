@@ -14,7 +14,7 @@
 
 const VOICE_CONFIG = {
   apiBase: document.querySelector('meta[name="api-base"]')?.content
-    || 'https://provision-preston-icon-betty.trycloudflare.com',
+    || 'https://vsnet-commit-investigation-recipes.trycloudflare.com',
 };
 
 // State
