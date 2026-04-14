@@ -253,7 +253,7 @@ async function onClickSlot(slot) {
 
   console.log(`[gallery] #${id} "${meta.name}" → voice prompt`);
   if (typeof window.voicePlayer?.speak === 'function') {
-    window.voicePlayer.speak(meta.description, meta.name, `a-iconoclast #${id}`);
+    window.voicePlayer.speak(meta.description, meta.name, `a-iconoclast #${id}`, { fromClick: true });
   }
 }
 
