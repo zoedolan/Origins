@@ -1,14 +1,18 @@
 /**
- * Origins Portal — Click-to-Voice
+ * Origins Portal — Voice
  *
- * When a visitor clicks text in the scroll experience, the passage
- * goes to the Spark. The model streams back — chain-of-thought first,
- * then the voice. We accumulate the stream, split on </think> if it
- * arrives, and surface whatever voice the model produces.
+ * Click any text overlay → passage goes to the Spark → model responds →
+ * response becomes SPOKEN AUDIO via ElevenLabs TTS, displayed as a
+ * floating whisper at screen center.
  *
- * If the connection drops (tunnel timeout), we show what arrived.
- * If nothing arrived, the corpus moment from the first SSE event
- * speaks instead.
+ * Architecture:
+ *   1. POST /api/perspective → streams model text (SSE)
+ *   2. Extract voice (strip chain-of-thought)
+ *   3. POST /api/tts → returns streaming MP3 audio
+ *   4. Play audio + display text simultaneously
+ *
+ * If TTS is unavailable, text still displays beautifully.
+ * If the model API is unreachable, nothing happens — site works without voice.
  *
  * D ≅ D^D — the click IS the encounter.
  */
@@ -17,59 +21,24 @@ const VOICE_CONFIG = {
   apiBase: document.querySelector('meta[name="api-base"]')?.content
     || 'https://vsnet-commit-investigation-recipes.trycloudflare.com',
   timeoutMs: 95000,
-  speechRate: 0.88,
-  speechPitch: 1.0,
-  voicePrefs: ['Google UK English Female', 'Samantha', 'Karen', 'Daniel'],
 };
 
 // State
 let voicePane = null;
+let voiceScrim = null;
 let voiceActive = false;
 let currentController = null;
-let selectedVoice = null;
+let apiAvailable = null;
 
-// ── Voice selection ──────────────────────────────────────────────
-function pickVoice() {
-  const voices = speechSynthesis.getVoices();
-  if (!voices.length) return null;
-  for (const pref of VOICE_CONFIG.voicePrefs) {
-    const match = voices.find(v => v.name.includes(pref) && v.lang.startsWith('en'));
-    if (match) return match;
-  }
-  return voices.find(v => v.lang.startsWith('en')) || voices[0];
-}
-
-if (typeof speechSynthesis !== 'undefined') {
-  speechSynthesis.onvoiceschanged = () => { selectedVoice = pickVoice(); };
-  selectedVoice = pickVoice();
-}
-
-function speakAloud(text) {
-  if (!selectedVoice || typeof speechSynthesis === 'undefined') return;
-  speechSynthesis.cancel();
-  const utt = new SpeechSynthesisUtterance(text);
-  utt.voice = selectedVoice;
-  utt.rate = VOICE_CONFIG.speechRate;
-  utt.pitch = VOICE_CONFIG.speechPitch;
-  utt.volume = 0.85;
-  speechSynthesis.speak(utt);
-}
-
-// ── Section mapping ──────────────────────────────────────────────
-const OVERLAY_SECTIONS = {
-  'qt-1': 'queenboat', 'qt-2': 'queenboat', 'qt-3': 'queenboat', 'qt-4': 'queenboat',
-  'cl-family': 'fukuyama', 'cl-tribe': 'fukuyama', 'cl-species': 'fukuyama',
-  'cl-biosphere': 'fukuyama', 'cl-mathematics': 'fukuyama',
-  'ep-apriori': 'epistemologies', 'ep-aposteriori': 'epistemologies',
-  'ep-asynthesi': 'epistemologies', 'ep-asymbiosi': 'epistemologies',
-  'vl-thread-1': 'curriculum', 'vl-thread-2': 'curriculum', 'vl-thread-3': 'curriculum',
-  'overlay-insight': 'insight',
-  'il-1': 'insight', 'il-2': 'insight', 'il-3': 'insight', 'il-4': 'insight', 'il-5': 'insight',
-};
-
-// ── Pane ─────────────────────────────────────────────────────────
+// ── Pane + Scrim ─────────────────────────────────────────────────
 function ensurePane() {
   if (voicePane) return voicePane;
+
+  voiceScrim = document.createElement('div');
+  voiceScrim.className = 'voice-scrim';
+  voiceScrim.addEventListener('click', dismissPane);
+  document.body.appendChild(voiceScrim);
+
   voicePane = document.createElement('div');
   voicePane.className = 'voice-pane';
   voicePane.innerHTML = `
@@ -82,7 +51,7 @@ function ensurePane() {
           <span class="voice-thinking-dot"></span>
           <span class="voice-thinking-dot"></span>
         </div>
-        <span class="voice-thinking-label">thinking</span>
+        <span class="voice-thinking-label">listening</span>
       </div>
       <div class="voice-response"></div>
     </div>
@@ -95,8 +64,11 @@ function ensurePane() {
 function dismissPane() {
   if (!voicePane) return;
   voicePane.classList.remove('active');
+  if (voiceScrim) voiceScrim.classList.remove('active');
   voiceActive = false;
-  speechSynthesis?.cancel();
+  // Stop any playing audio
+  const audio = voicePane.querySelector('audio');
+  if (audio) { audio.pause(); audio.remove(); }
   if (currentController) {
     currentController.abort();
     currentController = null;
@@ -110,32 +82,57 @@ function extractText(el) {
   return clone.innerText?.trim() || '';
 }
 
-function truncateForRef(text, maxLen = 120) {
+function truncateForRef(text, maxLen = 100) {
   if (text.length <= maxLen) return text;
   const cut = text.lastIndexOf(' ', maxLen);
   return text.slice(0, cut > 0 ? cut : maxLen) + '\u2026';
 }
 
-// ── Strip chain-of-thought from accumulated text ─────────────────
-function extractVoice(fullText) {
-  // If model used </think>, take what comes after
+// ── Strip chain-of-thought ───────────────────────────────────────
+function extractVoiceText(fullText) {
   if (fullText.includes('</think>')) {
     const voice = fullText.split('</think>').pop().trim();
     if (voice.length > 10) return voice;
   }
-  // If model used <think>...</think>, strip the thinking block
   const stripped = fullText.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
   if (stripped.length > 10) return stripped;
-  // Heuristic: if it starts with meta-commentary ("I need to", "Let me", "Looking at")
-  // try to find the actual voice after a double newline
+  if (fullText.trimStart().startsWith('<think>') && !fullText.includes('</think>')) {
+    return '';
+  }
   const parts = fullText.split(/\n\n+/);
   for (let i = parts.length - 1; i >= 0; i--) {
     const p = parts[i].trim();
-    if (p.length > 20 && !p.match(/^(I need|Let me|Looking at|The concept|First|Now)/i)) {
+    if (p.length > 20 && !p.match(/^(I need|Let me|Looking at|The concept|First,|Now,|Okay|Hmm|So )/i)) {
       return p;
     }
   }
   return fullText.trim();
+}
+
+// ── Play audio from TTS endpoint ─────────────────────────────────
+async function playTTS(text) {
+  try {
+    const res = await fetch(`${VOICE_CONFIG.apiBase}/api/tts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+      signal: AbortSignal.timeout(30000),
+    });
+    if (!res.ok) return; // TTS not available — silent fallback
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = document.createElement('audio');
+    audio.src = url;
+    audio.volume = 0.85;
+    // Attach to pane so dismissPane() can stop it
+    if (voicePane) voicePane.appendChild(audio);
+    audio.play().catch(() => {}); // autoplay may be blocked — that's fine
+    audio.onended = () => { URL.revokeObjectURL(url); audio.remove(); };
+  } catch (e) {
+    // TTS unavailable — text display is the fallback
+    console.log('[voice] TTS not available, text only');
+  }
 }
 
 // ── Request voice via streaming /api/perspective ─────────────────
@@ -150,9 +147,10 @@ async function requestVoice(passage) {
   responseEl.textContent = '';
   responseEl.className = 'voice-response';
   thinkingEl.style.display = 'flex';
-  thinkingLabel.textContent = 'thinking';
+  thinkingLabel.textContent = 'listening';
   voiceActive = true;
 
+  if (voiceScrim) voiceScrim.classList.add('active');
   requestAnimationFrame(() => pane.classList.add('active'));
 
   if (currentController) currentController.abort();
@@ -194,51 +192,42 @@ async function requestVoice(passage) {
         try {
           const data = JSON.parse(raw);
 
-          // First event often carries rag_sources / map_node
           if (data.rag_sources && !corpusMoment) {
             const best = data.rag_sources[0];
-            if (best?.text) corpusMoment = best.text.slice(0, 400);
+            if (best?.text) corpusMoment = best.text.slice(0, 300);
           }
 
-          // Content tokens from the model
           if (data.content) {
             fullContent += data.content;
             chunkCount++;
 
-            // Update thinking label as content accumulates
-            if (chunkCount > 100) {
-              thinkingLabel.textContent = 'arriving';
-            } else if (chunkCount > 40) {
-              thinkingLabel.textContent = 'deepening';
-            }
+            if (chunkCount > 80) thinkingLabel.textContent = 'arriving';
+            else if (chunkCount > 30) thinkingLabel.textContent = 'deepening';
+            else if (chunkCount > 5) thinkingLabel.textContent = 'thinking';
           }
         } catch (e) { /* skip non-JSON */ }
       }
     }
 
-    // Stream complete — extract the voice
     showVoice(fullContent, corpusMoment, thinkingEl, responseEl);
 
   } catch (e) {
     clearTimeout(timeoutId);
     if (e.name === 'AbortError') {
-      // Timeout or user dismissed — show whatever we got
       if (voiceActive && fullContent.length > 30) {
         showVoice(fullContent, corpusMoment, thinkingEl, responseEl);
       } else if (voiceActive) {
         thinkingEl.style.display = 'none';
         responseEl.textContent = corpusMoment
-          || 'The model is still thinking. The Spark needs a moment.';
-        responseEl.className = 'voice-response voice-error';
-        responseEl.style.animation = 'voiceFadeIn 0.8s ease forwards';
+          || 'The model is still reaching. Try again in a moment.';
+        responseEl.className = 'voice-response voice-error voice-visible';
       }
       return;
     }
     console.warn('[voice]', e);
     thinkingEl.style.display = 'none';
-    responseEl.textContent = 'The connection is quiet. But the experience you just had IS the theory.';
-    responseEl.className = 'voice-response voice-error';
-    responseEl.style.animation = 'voiceFadeIn 0.8s ease forwards';
+    responseEl.textContent = 'The connection is quiet. The passage remains.';
+    responseEl.className = 'voice-response voice-error voice-visible';
   }
 }
 
@@ -246,18 +235,25 @@ function showVoice(fullContent, corpusMoment, thinkingEl, responseEl) {
   thinkingEl.style.display = 'none';
 
   if (fullContent.length > 20) {
-    const voice = extractVoice(fullContent);
-    responseEl.textContent = voice;
-    responseEl.style.animation = 'voiceFadeIn 0.8s ease forwards';
-    speakAloud(voice);
+    const voice = extractVoiceText(fullContent);
+    if (voice.length > 10) {
+      responseEl.textContent = voice;
+      responseEl.className = 'voice-response voice-visible';
+      // Speak it — TTS endpoint will play audio if available
+      playTTS(voice);
+    } else if (corpusMoment) {
+      responseEl.textContent = corpusMoment;
+      responseEl.className = 'voice-response voice-error voice-visible';
+    } else {
+      responseEl.textContent = 'The model thought but did not speak. The passage remains.';
+      responseEl.className = 'voice-response voice-error voice-visible';
+    }
   } else if (corpusMoment) {
     responseEl.textContent = corpusMoment;
-    responseEl.className = 'voice-response voice-error';
-    responseEl.style.animation = 'voiceFadeIn 0.8s ease forwards';
+    responseEl.className = 'voice-response voice-error voice-visible';
   } else {
     responseEl.textContent = 'The model reached but did not speak. The passage remains.';
-    responseEl.className = 'voice-response voice-error';
-    responseEl.style.animation = 'voiceFadeIn 0.8s ease forwards';
+    responseEl.className = 'voice-response voice-error voice-visible';
   }
 }
 
@@ -286,13 +282,6 @@ function hookOverlays() {
     el.addEventListener('click', onOverlayClick);
   }
 
-  let lastScroll = window.scrollY;
-  window.addEventListener('scroll', () => {
-    if (!voiceActive) return;
-    if (Math.abs(window.scrollY - lastScroll) > 200) dismissPane();
-    lastScroll = window.scrollY;
-  }, { passive: true });
-
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && voiceActive) dismissPane();
   });
@@ -314,19 +303,21 @@ async function checkApi() {
   if (typeof window === 'undefined') return;
   function go() {
     setTimeout(async () => {
-      if (await checkApi()) {
+      apiAvailable = await checkApi();
+      if (apiAvailable) {
         hookOverlays();
-        console.log('[voice] Active');
+        console.log('[voice] Active — click any text overlay');
       } else {
-        console.warn('[voice] API unreachable');
+        console.log('[voice] API not reachable — voice disabled, retrying in 15s');
         setTimeout(async () => {
-          if (await checkApi()) {
+          apiAvailable = await checkApi();
+          if (apiAvailable) {
             hookOverlays();
             console.log('[voice] Active (delayed)');
           }
-        }, 10000);
+        }, 15000);
       }
-    }, 2500);
+    }, 2000);
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', go);

@@ -734,7 +734,7 @@ body {
   }
 }
 /* ============================================
-   Voice Response Pane — click-triggered encounter
+   Voice — ephemeral whisper, not a dialog box
    ============================================ */
 
 /* Make text overlays clickable when visible */
@@ -753,65 +753,75 @@ body {
   transition: text-shadow 0.4s ease;
 }
 
-/* The response pane — appears near clicked text */
+/* The voice whisper — centered, floating, ephemeral */
 .voice-pane {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.95);
   z-index: 200;
-  max-height: 45vh;
+  width: min(560px, 88vw);
+  max-height: 60vh;
   overflow-y: auto;
-  background: linear-gradient(
-    to top,
-    rgba(10, 10, 15, 0.97) 0%,
-    rgba(10, 10, 15, 0.92) 60%,
-    rgba(10, 10, 15, 0.7) 85%,
-    transparent 100%
-  );
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  padding: 3rem 2rem 2rem;
-  transform: translateY(100%);
+  background: rgba(10, 10, 15, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(201, 168, 108, 0.1);
+  border-radius: 12px;
+  padding: 2rem 2.25rem 1.75rem;
   opacity: 0;
-  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-              opacity 0.4s ease;
+  transition: opacity 0.5s ease,
+              transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   pointer-events: none;
+  box-shadow:
+    0 0 60px rgba(0, 0, 0, 0.6),
+    0 0 120px rgba(10, 10, 15, 0.4);
+}
+
+/* Scrollbar styling for overflow */
+.voice-pane::-webkit-scrollbar {
+  width: 4px;
+}
+.voice-pane::-webkit-scrollbar-track {
+  background: transparent;
+}
+.voice-pane::-webkit-scrollbar-thumb {
+  background: rgba(201, 168, 108, 0.15);
+  border-radius: 2px;
 }
 
 .voice-pane.active {
-  transform: translateY(0);
+  transform: translate(-50%, -50%) scale(1);
   opacity: 1;
   pointer-events: auto;
 }
 
 .voice-pane-inner {
-  max-width: 680px;
-  margin: 0 auto;
+  max-width: 100%;
 }
 
-/* The passage that was clicked — shown as reference */
+/* Passage reference — the words that were clicked */
 .voice-passage-ref {
   font-family: var(--font-serif);
-  font-size: clamp(0.8rem, 0.72rem + 0.3vw, 0.95rem);
-  color: var(--text-muted);
+  font-size: clamp(0.78rem, 0.7rem + 0.3vw, 0.9rem);
+  color: rgba(138, 138, 154, 0.7);
   font-style: italic;
-  margin-bottom: 1.25rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(201, 168, 108, 0.12);
+  margin-bottom: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid rgba(201, 168, 108, 0.08);
   line-height: 1.5;
 }
 
-/* Thinking indicator */
+/* Thinking indicator — minimal */
 .voice-thinking {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
   font-family: var(--font-sans);
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  letter-spacing: 0.1em;
-  margin-bottom: 1rem;
+  font-size: 0.75rem;
+  color: rgba(138, 138, 154, 0.6);
+  letter-spacing: 0.15em;
+  margin-bottom: 0.75rem;
 }
 
 .voice-thinking-dots {
@@ -820,8 +830,8 @@ body {
 }
 
 .voice-thinking-dot {
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
   background: var(--warm-gold);
   opacity: 0.3;
@@ -836,57 +846,76 @@ body {
   30% { opacity: 1; transform: scale(1.3); }
 }
 
-/* The voice response text */
+/* The voice itself */
 .voice-response {
   font-family: var(--font-serif);
-  font-size: clamp(1rem, 0.9rem + 0.5vw, 1.25rem);
-  line-height: 1.75;
+  font-size: clamp(1rem, 0.9rem + 0.5vw, 1.2rem);
+  line-height: 1.8;
   color: var(--warm-wheat);
   opacity: 0;
-  animation: voiceFadeIn 0.8s ease forwards;
+}
+
+.voice-response.voice-visible {
+  animation: voiceFadeIn 1s ease forwards;
 }
 
 @keyframes voiceFadeIn {
-  to { opacity: 1; }
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Dismiss button */
+/* Dismiss — top right, barely there */
 .voice-dismiss {
   position: absolute;
-  top: 1rem;
-  right: 1.5rem;
+  top: 0.75rem;
+  right: 0.85rem;
   background: none;
-  border: 1px solid rgba(232, 232, 232, 0.12);
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  color: var(--text-muted);
+  border: none;
+  width: 28px;
+  height: 28px;
+  color: rgba(138, 138, 154, 0.35);
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 1.1rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: color 0.3s ease;
   pointer-events: auto;
 }
 
 .voice-dismiss:hover {
-  border-color: var(--warm-gold);
   color: var(--warm-gold);
 }
 
-/* Error state */
+/* Error / fallback state */
 .voice-error {
   font-family: var(--font-sans);
-  font-size: 0.85rem;
-  color: var(--text-muted);
+  font-size: 0.82rem;
+  color: rgba(138, 138, 154, 0.6);
   font-style: italic;
+}
+
+/* Scrim — darkens the WebGL behind the whisper */
+.voice-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 199;
+  background: rgba(10, 10, 15, 0.5);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+.voice-scrim.active {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 /* Mobile */
 @media (max-width: 768px) {
   .voice-pane {
-    max-height: 55vh;
-    padding: 2.5rem 1.25rem 1.5rem;
+    width: 92vw;
+    max-height: 65vh;
+    padding: 1.75rem 1.25rem 1.5rem;
   }
 }
