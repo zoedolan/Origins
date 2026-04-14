@@ -145,15 +145,19 @@ function onScroll() {
 
 // ── Click → voice ────────────────────────────────────────────────
 
+let voiceInFlight = false;
+
 async function onClickSlot(slot) {
   const id = parseInt(slot.dataset.tokenId, 10);
   if (!id) return;
 
-  // Stop any in-progress voice FIRST
-  if (typeof window.voicePlayer?.stop === 'function') {
-    window.voicePlayer.stop();
+  // If voice is already playing or generating, let it finish
+  if (voiceInFlight) {
+    console.log(`[gallery] Click ignored — voice in flight`);
+    return;
   }
 
+  voiceInFlight = true;
   slot.classList.add('loading');
   console.log(`[gallery] Clicked #${id}, fetching metadata...`);
   const meta = await fetchMeta(id);
@@ -161,13 +165,15 @@ async function onClickSlot(slot) {
 
   if (!meta?.description) {
     console.warn(`[gallery] No description for #${id}`);
+    voiceInFlight = false;
     return;
   }
 
   console.log(`[gallery] #${id} "${meta.name}" → voice prompt`);
   if (typeof window.voicePlayer?.speak === 'function') {
-    window.voicePlayer.speak(meta.description, meta.name, `a-iconoclast #${id}`, { fromClick: true });
+    await window.voicePlayer.speak(meta.description, meta.name, `a-iconoclast #${id}`, { fromClick: true });
   }
+  voiceInFlight = false;
 }
 
 // ── Metadata fetch ───────────────────────────────────────────────
