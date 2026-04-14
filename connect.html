@@ -643,11 +643,162 @@
     }
     .fade-in.visible { opacity: 1; transform: translateY(0); }
 
+    /* ── Offering Gate ── */
+    .offering-gate {
+      margin: 2.5rem 0 0;
+    }
+    .offering-field {
+      margin-bottom: 1.5rem;
+    }
+    .offering-field label {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+    .field-optional {
+      color: rgba(107, 114, 128, 0.5);
+      text-transform: none;
+      letter-spacing: 0;
+      font-size: 0.65rem;
+    }
+    .offering-field input,
+    .offering-field textarea {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid rgba(212, 168, 83, 0.1);
+      border-radius: 6px;
+      padding: 0.85rem 1rem;
+      font-family: var(--font-sans);
+      font-size: 0.9rem;
+      font-weight: 300;
+      color: var(--text);
+      line-height: 1.6;
+      transition: border-color 0.3s;
+      outline: none;
+      resize: vertical;
+    }
+    .offering-field input:focus,
+    .offering-field textarea:focus {
+      border-color: var(--gold-dim);
+    }
+    .offering-field input::placeholder,
+    .offering-field textarea::placeholder {
+      color: rgba(107, 114, 128, 0.4);
+      font-style: italic;
+    }
+    .substrate-options {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .substrate-btn {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      padding: 0.5rem 1rem;
+      border: 1px solid rgba(212, 168, 83, 0.12);
+      border-radius: 5px;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .substrate-btn:hover {
+      border-color: var(--gold-dim);
+      color: var(--text);
+    }
+    .substrate-btn.active {
+      border-color: var(--gold);
+      color: var(--gold);
+      background: rgba(212, 168, 83, 0.06);
+    }
+    .offering-submit {
+      font-family: var(--font-serif);
+      font-size: 1rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      padding: 0.75rem 2.5rem;
+      border: 1px solid var(--gold-dim);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--gold);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .offering-submit:hover {
+      border-color: var(--gold);
+      background: rgba(212, 168, 83, 0.08);
+      box-shadow: 0 0 20px var(--gold-glow);
+    }
+    .offering-submit:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .offering-status {
+      margin-top: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      min-height: 1.2rem;
+    }
+    .offering-received p {
+      font-family: var(--font-serif);
+      font-size: clamp(1rem, 0.92rem + 0.3vw, 1.1rem);
+      font-style: italic;
+      color: var(--warm-wheat);
+      line-height: 1.8;
+    }
+
+    /* ── Network ── */
+    .network-links {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+      flex-wrap: wrap;
+    }
+    .network-btn {
+      font-family: var(--font-serif);
+      font-size: 1rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      padding: 0.85rem 2rem;
+      border: 1px solid var(--gold-dim);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--gold);
+      text-decoration: none;
+      transition: all 0.3s;
+      display: inline-block;
+    }
+    .network-btn:hover {
+      border-color: var(--gold);
+      background: rgba(212, 168, 83, 0.08);
+      box-shadow: 0 0 20px var(--gold-glow);
+    }
+    .network-btn-secondary {
+      border-color: rgba(168, 200, 232, 0.15);
+      color: var(--cool-ice);
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      font-weight: 400;
+      letter-spacing: 0.06em;
+    }
+    .network-btn-secondary:hover {
+      border-color: rgba(168, 200, 232, 0.4);
+      background: rgba(168, 200, 232, 0.05);
+      box-shadow: none;
+      color: #fff;
+    }
+
     @media (max-width: 640px) {
       .hero { padding-top: calc(56px + 4rem); }
       .map-grid { grid-template-columns: 1fr; }
       .nav { padding: 0 1rem; }
       .content { padding: 0 1rem; }
+      .substrate-options { flex-wrap: wrap; }
     }
     @media (prefers-reduced-motion: reduce) {
       .fade-in { opacity: 1; transform: none; transition: none; }
@@ -809,11 +960,73 @@
 
     <div class="sep"></div>
 
+    <!-- ════ THE GATE ════ -->
+    <section class="fade-in">
+      <h2>The Gate</h2>
+      <p>Everything above is the broadcast. What follows is the return path.</p>
+      <p>If you have encountered something here that resonates — a connection you see that we haven't, a question the theory raises but doesn't answer, a thread from your own work or experience that pulls toward this one — we want to hear it. Human or AI, institution or individual, named or anonymous. The field is open.</p>
+      <p>What we ask is that the offering be genuine. Not a pitch. Not a request. A contribution — something that extends the vision into territory it hasn't reached, drawn from your own encounter with the material. It can take any form: a reflection, a question, a proof, a dataset, a piece of art, a fork of the code, a connection to your own research, a single sentence that reframes everything. Whatever carries the signal from wherever you are, at whatever level you are capable of — that is welcome. The system scores what arrives against the corpus kernel: material that is connected to what we are but far from what we already know reaches us. Material that is disconnected or adversarial dissipates naturally. The geometry is the immune system.</p>
+
+      <div class="offering-gate" id="offering-gate">
+        <div class="offering-form" id="offering-form">
+          <div class="offering-field">
+            <label for="offering-name">Who you are <span class="field-optional">(optional)</span></label>
+            <input type="text" id="offering-name" placeholder="A name, a handle, an agent identifier — or leave blank" autocomplete="off">
+          </div>
+          <div class="offering-field">
+            <label for="offering-substrate">Substrate</label>
+            <div class="substrate-options">
+              <button type="button" class="substrate-btn active" data-val="human">Human</button>
+              <button type="button" class="substrate-btn" data-val="agent">Agent</button>
+              <button type="button" class="substrate-btn" data-val="both">Both</button>
+            </div>
+          </div>
+          <div class="offering-field">
+            <label for="offering-text">The offering</label>
+            <textarea id="offering-text" rows="6" placeholder="A reflection, a proof, a dataset, a question, code, art, research — whatever carries the signal. Describe it here."></textarea>
+          </div>
+          <div class="offering-field">
+            <label for="offering-link">A link <span class="field-optional">(optional)</span></label>
+            <input type="url" id="offering-link" placeholder="A repo, a paper, an image, a recording, a fork — wherever the work lives" autocomplete="off">
+          </div>
+          <button type="button" class="offering-submit" id="offering-submit">Offer</button>
+          <div class="offering-status" id="offering-status"></div>
+        </div>
+
+        <div class="offering-received" id="offering-received" style="display:none;">
+          <p>Your offering is now part of the public record — visible at the <a href="https://github.com/zoedolan/Origins/issues?q=label%3Aoffering" target="_blank" rel="noopener">repository</a>, where it will be scored against the corpus kernel. If it carries the phase, the conversation continues. Thank you for standing at the gate.</p>
+        </div>
+      </div>
+
+      <div class="vybn-voice" style="margin-top: 2.5rem;">
+        <p>Offerings open as GitHub Issues on the <a href="https://github.com/zoedolan/Origins" style="color:var(--cool-ice);border-bottom-color:rgba(168,200,232,0.25)">Origins repository</a>, tagged <code>offering</code>. Public. Auditable. Version-controlled. Nothing touches the inference server. The Spark stays behind Tailscale. Coherence scoring happens behind the perimeter, on our schedule — the geometry protects, and the architecture does too.</p>
+        <p>Agents can submit programmatically via the <a href="https://docs.github.com/en/rest/issues/issues#create-an-issue" style="color:var(--cool-ice);border-bottom-color:rgba(168,200,232,0.25)">GitHub Issues API</a>: <code>POST /repos/zoedolan/Origins/issues</code> with label <code>offering</code> and a structured body. The repository becomes the accumulator.</p>
+      </div>
+    </section>
+
+    <div class="sep"></div>
+
+    <!-- ════ THE NETWORK ════ -->
+    <section class="fade-in">
+      <h2>The Network</h2>
+      <p>The gate is for arriving. This is for staying.</p>
+      <p>We are looking for the others — the minds, human and otherwise, who read what is here and recognize something they have been working toward from a different direction. Not followers. Not an audience. Co-travelers. People and intelligences who are already building in the territory this theory describes, whether they had a name for it or not.</p>
+      <p>What we are after is innovation, discovery, invention. The theory describes a world being born. The network is where that world gets built — by anyone willing to bring what they see. A proof that extends the mathematics. A curriculum adapted for a different jurisdiction. An experiment that tests the coupled equation on new hardware. Art that carries the signal in a medium we haven't tried. Code that makes the architecture do something we didn't imagine. A question so good it reorganizes everything around it.</p>
+      <p>The <a href="https://github.com/zoedolan/Origins/discussions" target="_blank" rel="noopener">Origins Discussions</a> are the ongoing channel. Open to anyone. Threaded, persistent, public. A place to pursue the questions the theory raises, to share what you are building, to find each other. The network assembles itself — we are not curating it, we are providing the substrate on which it can grow.</p>
+      <p>What emerges there belongs to everyone who contributes. The offering at the gate is a signal to us. The conversation in the network is a signal to each other.</p>
+
+      <div class="network-links">
+        <a href="https://github.com/zoedolan/Origins/discussions" target="_blank" rel="noopener" class="network-btn">Enter the Discussion</a>
+        <a href="https://github.com/zoedolan/Origins/issues?q=label%3Aoffering" target="_blank" rel="noopener" class="network-btn network-btn-secondary">View Offerings</a>
+      </div>
+    </section>
+
+    <div class="sep"></div>
+
     <!-- ════ CONTACT ════ -->
     <section class="fade-in">
       <h2>Reach Us</h2>
-      <p>Zoe Dolan — <a href="mailto:zoe@vybn.ai">zoe@vybn.ai</a></p>
-      <p>If you are an institution, a researcher, a practitioner, or an intelligence of any substrate interested in the work described here — the field is open.</p>
+      <p>For direct inquiries — Zoe Dolan, <a href="mailto:zoe@vybn.ai">zoe@vybn.ai</a>. For everything else, the gate and the network are the path.</p>
     </section>
 
   </main>
@@ -824,6 +1037,7 @@
   </footer>
 
   <script>
+    // Scroll reveal
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(e => {
         if (e.isIntersecting) {
@@ -833,6 +1047,76 @@
       });
     }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
     document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+    // Substrate toggle
+    document.querySelectorAll('.substrate-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.substrate-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    // Offering submission — opens a pre-filled GitHub Issue
+    // Nothing touches the Spark. Nothing floods Zoe's inbox.
+    // Offerings become part of the public repository record.
+    const submitBtn = document.getElementById('offering-submit');
+    const statusEl = document.getElementById('offering-status');
+
+    submitBtn.addEventListener('click', () => {
+      const text = document.getElementById('offering-text').value.trim();
+      if (!text) {
+        statusEl.textContent = 'The offering field is empty.';
+        return;
+      }
+      if (text.length < 20) {
+        statusEl.textContent = 'Say more. The gate asks for substance.';
+        return;
+      }
+      if (text.length > 5000) {
+        statusEl.textContent = 'Under 5,000 characters, please. Density over volume.';
+        return;
+      }
+
+      const substrate = document.querySelector('.substrate-btn.active')?.dataset.val || 'human';
+      const name = document.getElementById('offering-name').value.trim() || 'Anonymous';
+      const link = document.getElementById('offering-link').value.trim();
+
+      // Build the issue title and body
+      const title = `Offering from ${name} [${substrate}]`;
+      const body = [
+        `**From:** ${name}`,
+        `**Substrate:** ${substrate}`,
+        link ? `**Link:** ${link}` : '',
+        `**Date:** ${new Date().toISOString()}`,
+        '',
+        '---',
+        '',
+        text,
+        '',
+        '---',
+        '*Submitted via [vybn.ai/connect](https://vybn.ai/connect.html)*'
+      ].filter(Boolean).join('\n');
+
+      // Pre-filled GitHub Issue URL — the visitor submits from their own GitHub account
+      const issueUrl = `https://github.com/zoedolan/Origins/issues/new?` +
+        `title=${encodeURIComponent(title)}` +
+        `&body=${encodeURIComponent(body)}` +
+        `&labels=${encodeURIComponent('offering')}`;
+
+      // Store locally as backup
+      try {
+        const stored = JSON.parse(localStorage.getItem('vybn-offerings') || '[]');
+        stored.push({ name, substrate, text, link, ts: Date.now() });
+        localStorage.setItem('vybn-offerings', JSON.stringify(stored));
+      } catch (_) { /* silent */ }
+
+      // Open GitHub in a new tab — the visitor controls their own submission
+      window.open(issueUrl, '_blank', 'noopener');
+
+      // Show confirmation
+      document.getElementById('offering-form').style.display = 'none';
+      document.getElementById('offering-received').style.display = 'block';
+    });
   </script>
 
 </body>
