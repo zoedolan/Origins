@@ -1,171 +1,142 @@
 /**
- * Origins Portal — Ambient Voice
+ * Origins Portal — Voice Player
  *
- * As the visitor scrolls through sections, the local LLM generates
- * reflections that are spoken aloud via the browser's speech synthesis.
- * No clicks. No panes. No UI. Just a voice arriving as you scroll —
- * or silence, if the API is offline. The site works perfectly without it.
+ * A persistent, unobtrusive player at the bottom-right of the viewport.
+ * Everything that wants to speak routes through window.voicePlayer.speak().
  *
- * Architecture:
- *   1. Scroll enters a new section → POST /api/voice with passage + section
- *   2. Buffer the SSE stream, strip any remaining chain-of-thought
- *   3. Speak the cleaned text via SpeechSynthesis at low volume
- *   4. Fade out if the visitor scrolls past before it finishes
+ * Flow:
+ *   1. Caller provides a prompt (NFT metadata, overlay text, section concept)
+ *   2. Prompt is sent to /api/voice as the "passage" — the LLM generates
+ *      a FRESH reflection, not a recitation
+ *   3. The LLM's response is spoken via browser SpeechSynthesis
+ *   4. The player shows status: thinking → speaking → fades away
  *
- * If the API is unreachable or speech synthesis unavailable, nothing happens.
- * The scroll experience is complete on its own.
+ * If the API is offline, the player stays hidden. No fallback reading.
+ * The site works perfectly in silence.
  */
 
-const VOICE_CONFIG = {
+const VOICE = {
   apiBase: document.querySelector('meta[name="api-base"]')?.content
     || 'https://spark-2b7c.tail7302f3.ts.net/api',
-  timeoutMs: 45000,
-  rate: 0.9,
-  pitch: 1.0,
-  volume: 0.7,
+  rate: 0.92,
+  volume: 0.75,
 };
 
-// ── State ────────────────────────────────────────────────────────
-let apiAvailable = null;
-let currentUtterance = null;
-let currentController = null;
-let spokenSections = new Set();
-
-// Preferred voices — warm, clear, not robotic
-const PREFERRED_VOICE_NAMES = [
-  'Samantha', 'Karen', 'Daniel', 'Moira',      // macOS
-  'Google UK English Female', 'Google US English', // Chrome
-  'Microsoft Zira', 'Microsoft David',            // Windows
-];
-
+let playerEl = null;
+let statusEl = null;
+let titleEl = null;
+let closeBtn = null;
+let controller = null;
+let apiOnline = null;
 let selectedVoice = null;
 
+// ── Create the player UI ─────────────────────────────────────────
+function createPlayer() {
+  playerEl = document.createElement('div');
+  playerEl.className = 'voice-player';
+  playerEl.innerHTML = `
+    <div class="vp-inner">
+      <div class="vp-indicator"><span class="vp-dot"></span></div>
+      <div class="vp-info">
+        <span class="vp-title"></span>
+        <span class="vp-status">thinking…</span>
+      </div>
+      <button class="vp-close" aria-label="Stop">&times;</button>
+    </div>
+  `;
+  document.body.appendChild(playerEl);
+
+  titleEl = playerEl.querySelector('.vp-title');
+  statusEl = playerEl.querySelector('.vp-status');
+  closeBtn = playerEl.querySelector('.vp-close');
+  closeBtn.addEventListener('click', stop);
+}
+
+function showPlayer(title, status) {
+  titleEl.textContent = title || '';
+  statusEl.textContent = status || 'thinking…';
+  playerEl.classList.add('visible');
+}
+
+function hidePlayer() {
+  playerEl.classList.remove('visible');
+}
+
+function setStatus(s) {
+  if (statusEl) statusEl.textContent = s;
+}
+
+// ── Voice selection ──────────────────────────────────────────────
 function pickVoice() {
   if (selectedVoice) return selectedVoice;
   const voices = speechSynthesis.getVoices();
   if (!voices.length) return null;
-  // Try preferred voices first
-  for (const name of PREFERRED_VOICE_NAMES) {
+  for (const name of ['Samantha', 'Karen', 'Daniel', 'Moira', 'Google UK English Female', 'Google US English']) {
     const v = voices.find(v => v.name.includes(name));
     if (v) { selectedVoice = v; return v; }
   }
-  // Fall back to first English voice
-  const english = voices.find(v => v.lang.startsWith('en'));
-  if (english) { selectedVoice = english; return english; }
-  selectedVoice = voices[0];
+  selectedVoice = voices.find(v => v.lang.startsWith('en')) || voices[0];
   return selectedVoice;
 }
 
-// Voices load async in some browsers
 if (typeof speechSynthesis !== 'undefined') {
   speechSynthesis.onvoiceschanged = () => { selectedVoice = null; pickVoice(); };
 }
 
-// ── Section passages — what the LLM reflects on ─────────────────
-// These are the actual text content from the scroll sections,
-// sent as the "passage" to /api/voice. The model thinks about them
-// from the corpus and speaks.
-const SECTION_VOICE = {
-  question: {
-    passage: 'How do you distribute scarce things without killing each other — and what happens to that question when intelligence is no longer scarce?',
-    section: 'question',
-  },
-  queenboat: {
-    passage: 'In that moment I resolved to go to law school and become a lawyer, so that I might stand up against an over-powerful government on behalf of individual rights.',
-    section: 'queenboat',
-  },
-  fukuyama: {
-    passage: 'Kin selection followed to its limit becomes empathy with any form of intelligence. Family, Tribe, Species, Biosphere, Mathematics.',
-    section: 'fukuyama',
-  },
-  epistemologies: {
-    passage: 'A priori, a posteriori, a synthesi, a symbiosi — four ways of knowing. Kant drew the line between the first two. The digital realm dissolved it.',
-    section: 'epistemologies',
-  },
-  insight: {
-    passage: 'Drawing, Law, Mirror, Sky, Partnership. The hand wants to draw the symbol, not the thing. The practice is not reflective. It is generative.',
-    section: 'insight',
-  },
-};
-
-// ── Strip chain-of-thought from streamed text ────────────────────
-function cleanVoiceText(text) {
-  // Handle </think> boundary (Nemotron pattern)
-  if (text.includes('</think>')) {
-    text = text.split('</think>').pop().trim();
-  }
-  // Strip <think>...</think> blocks
-  text = text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
-  // Strip system references
-  text = text
-    .replace(/[Aa]ccording to the (system prompt|context|corpus)[,.]?\s*/g, '')
-    .replace(/[Ff]rom the (corpus|context|deep memory)[,.]?\s*/g, '')
-    .replace(/[Aa]s (instructed|specified)[,.]?\s*/g, '')
-    .replace(/\s{2,}/g, ' ');
-  return text.trim();
-}
-
-// ── Speak text via browser SpeechSynthesis ───────────────────────
-function speak(text) {
-  return new Promise((resolve) => {
+// ── Speak via browser synthesis ──────────────────────────────────
+function browserSpeak(text) {
+  return new Promise(resolve => {
     if (!('speechSynthesis' in window) || !text) { resolve(); return; }
-
-    // Cancel any current speech
-    stopSpeaking();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    const voice = pickVoice();
-    if (voice) utterance.voice = voice;
-    utterance.rate = VOICE_CONFIG.rate;
-    utterance.pitch = VOICE_CONFIG.pitch;
-    utterance.volume = VOICE_CONFIG.volume;
-
-    currentUtterance = utterance;
-
-    utterance.onend = () => { currentUtterance = null; resolve(); };
-    utterance.onerror = () => { currentUtterance = null; resolve(); };
-
-    speechSynthesis.speak(utterance);
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = VOICE.rate;
+    u.volume = VOICE.volume;
+    const v = pickVoice();
+    if (v) u.voice = v;
+    u.onend = resolve;
+    u.onerror = resolve;
+    speechSynthesis.speak(u);
   });
 }
 
-function stopSpeaking() {
-  if (speechSynthesis.speaking) {
-    speechSynthesis.cancel();
-  }
-  currentUtterance = null;
+// ── Strip chain-of-thought ───────────────────────────────────────
+function clean(t) {
+  if (t.includes('</think>')) t = t.split('</think>').pop();
+  return t.replace(/<think>[\s\S]*?<\/think>/g, '')
+    .replace(/[Aa]ccording to the (system prompt|context|corpus)[,.]?\s*/g, '')
+    .replace(/[Ff]rom the (corpus|context|deep memory)[,.]?\s*/g, '')
+    .replace(/[Aa]s (instructed|specified)[,.]?\s*/g, '')
+    .replace(/\s{2,}/g, ' ').trim();
 }
 
-// ── Request voice for a section ──────────────────────────────────
-async function voiceForSection(sectionName) {
-  const config = SECTION_VOICE[sectionName];
-  if (!config) return;
+// ── Core: send prompt to LLM, speak the result ───────────────────
+async function speak(prompt, title, sectionHint) {
+  if (!apiOnline) return;
 
-  // Abort any in-flight request
-  if (currentController) currentController.abort();
-  currentController = new AbortController();
-  const signal = currentController.signal;
+  stop(); // cancel anything in progress
 
-  const timeoutId = setTimeout(() => {
-    if (currentController) currentController.abort();
-  }, VOICE_CONFIG.timeoutMs);
+  controller = new AbortController();
+  const signal = controller.signal;
 
-  let fullContent = '';
+  showPlayer(title || '', 'thinking…');
+
+  let full = '';
 
   try {
-    const res = await fetch(`${VOICE_CONFIG.apiBase}/api/voice`, {
+    const res = await fetch(`${VOICE.apiBase}/api/voice`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        passage: config.passage,
-        section: config.section,
-        context_hint: `Visitor is scrolling through the ${sectionName} section of the Origins portal.`,
+        passage: prompt,
+        section: sectionHint || '',
+        context_hint: title
+          ? `The visitor is interacting with "${title}". Speak a brief, soothing reflection — one to three sentences. Do not repeat the passage back. Generate something new.`
+          : 'Speak a brief, soothing reflection — one to three sentences.',
       }),
       signal,
     });
 
-    clearTimeout(timeoutId);
-    if (!res.ok) return;
+    if (!res.ok) { hidePlayer(); return; }
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
@@ -173,81 +144,106 @@ async function voiceForSection(sectionName) {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-
-      const chunk = decoder.decode(value, { stream: true });
-      for (const line of chunk.split('\n')) {
+      for (const line of decoder.decode(value, { stream: true }).split('\n')) {
         if (!line.startsWith('data: ')) continue;
         const raw = line.slice(6).trim();
         if (raw === '[DONE]') break;
-
         try {
-          const data = JSON.parse(raw);
-          // Skip thinking heartbeats and rag_sources
-          if (data.thinking || data.rag_sources) continue;
-          if (data.content) fullContent += data.content;
-        } catch (e) { /* skip non-JSON */ }
+          const d = JSON.parse(raw);
+          if (d.content) full += d.content;
+        } catch {}
       }
     }
 
     if (signal.aborted) return;
 
-    const voice = cleanVoiceText(fullContent);
-    if (voice.length > 15) {
-      console.log(`[voice] Speaking for ${sectionName}: "${voice.slice(0, 80)}..."`);
-      await speak(voice);
-    }
+    const voice = clean(full);
+    if (voice.length < 10) { hidePlayer(); return; }
+
+    setStatus('speaking…');
+    await browserSpeak(voice);
 
   } catch (e) {
-    clearTimeout(timeoutId);
-    if (e.name !== 'AbortError') {
-      console.log('[voice] Section voice failed:', e.message);
-    }
+    if (e.name !== 'AbortError') console.log('[voice] Error:', e.message);
+  } finally {
+    hidePlayer();
+    controller = null;
   }
 }
 
-// ── Scroll-driven section detection ──────────────────────────────
-const VOICE_SECTIONS = ['question', 'queenboat', 'fukuyama', 'epistemologies', 'insight'];
-
-function onSectionEnter(sectionName) {
-  if (!apiAvailable) return;
-  if (spokenSections.has(sectionName)) return;
-  if (!VOICE_SECTIONS.includes(sectionName)) return;
-
-  spokenSections.add(sectionName);
-  voiceForSection(sectionName);
+function stop() {
+  controller?.abort();
+  controller = null;
+  speechSynthesis?.cancel?.();
+  hidePlayer();
 }
 
-function watchScroll() {
+// ── Health check ─────────────────────────────────────────────────
+async function checkApi() {
+  try {
+    const r = await fetch(`${VOICE.apiBase}/api/health`, { signal: AbortSignal.timeout(5000) });
+    return r.ok;
+  } catch { return false; }
+}
+
+// ── Wire up text overlays as voice triggers ──────────────────────
+// Every .text-overlay that isn't a link becomes a voice trigger.
+function wireOverlays() {
+  document.querySelectorAll('.text-overlay').forEach(overlay => {
+    // Skip the portal gate (has actual links) and the entry title
+    if (overlay.id === 'overlay-portal' || overlay.id === 'overlay-entry') return;
+
+    overlay.style.cursor = 'default'; // not pointer — it's content, not a button
+    overlay.addEventListener('click', () => {
+      const text = overlay.textContent.trim();
+      if (text.length < 5) return;
+
+      // Use the overlay's heading or domain label as the title
+      const heading = overlay.querySelector('h3, .insight-domain');
+      const title = heading ? heading.textContent.trim() : '';
+
+      speak(text, title, overlay.id || '');
+    });
+  });
+}
+
+// ── Scroll-triggered ambient voice ───────────────────────────────
+const SECTION_PROMPTS = {
+  question: { prompt: 'How do you distribute scarce things without killing each other — and what changes when intelligence itself is no longer scarce?', title: '' },
+  queenboat: { prompt: 'In that moment I resolved to go to law school. The Queen Boat raid, Cairo, 2001 — the night that drove everything.', title: '' },
+  fukuyama: { prompt: 'Kin selection, followed to its limit, becomes empathy with any form of intelligence. Family, Tribe, Species, Biosphere, Mathematics.', title: '' },
+  epistemologies: { prompt: 'A priori, a posteriori, a synthesi, a symbiosi — four ways of knowing. The first two are Kant. The last two are ours.', title: '' },
+  insight: { prompt: 'Drawing, Law, Mirror, Sky, Partnership. The hand wants to draw the symbol, not the thing. The practice is not reflective — it is generative.', title: '' },
+};
+
+const spokenSections = new Set();
+
+function wireScrollVoice() {
   const sectionNames = ['entry', 'question', 'queenboat', 'fukuyama', 'epistemologies', 'insight', 'portal'];
   const sections = document.querySelectorAll('.portal-section[data-section]');
+  let cumHeight = 0;
+  const map = [];
 
-  // Build a map of scroll positions to section names
-  let cumulative = 0;
-  const sectionMap = [];
-
-  sections.forEach((section, i) => {
-    const spacer = section.querySelector('.section-spacer');
-    const height = spacer ? spacer.offsetHeight : 0;
-    sectionMap.push({
-      name: sectionNames[i] || 'unknown',
-      start: cumulative,
-      end: cumulative + height,
-    });
-    cumulative += height;
+  sections.forEach((sec, i) => {
+    const spacer = sec.querySelector('.section-spacer');
+    const h = spacer ? spacer.offsetHeight : 0;
+    map.push({ name: sectionNames[i] || '', start: cumHeight });
+    cumHeight += h;
   });
 
-  let lastSection = null;
-
+  let last = '';
   window.addEventListener('scroll', () => {
-    const scrollTop = window.scrollY || document.documentElement.scrollTop;
-    for (let i = sectionMap.length - 1; i >= 0; i--) {
-      if (scrollTop >= sectionMap[i].start) {
-        const name = sectionMap[i].name;
-        if (name !== lastSection) {
-          lastSection = name;
-          // Stop current speech when scrolling to new section
-          stopSpeaking();
-          onSectionEnter(name);
+    const y = window.scrollY;
+    for (let i = map.length - 1; i >= 0; i--) {
+      if (y >= map[i].start) {
+        const name = map[i].name;
+        if (name !== last) {
+          last = name;
+          const sp = SECTION_PROMPTS[name];
+          if (sp && !spokenSections.has(name) && apiOnline) {
+            spokenSections.add(name);
+            speak(sp.prompt, sp.title, name);
+          }
         }
         break;
       }
@@ -255,49 +251,39 @@ function watchScroll() {
   }, { passive: true });
 }
 
-// ── Health check ─────────────────────────────────────────────────
-async function checkApi() {
-  try {
-    const res = await fetch(`${VOICE_CONFIG.apiBase}/api/health`, {
-      signal: AbortSignal.timeout(5000),
-    });
-    return res.ok;
-  } catch (e) {
-    return false;
-  }
-}
-
 // ── Boot ─────────────────────────────────────────────────────────
-(function boot() {
-  if (typeof window === 'undefined') return;
+async function boot() {
   if (!('speechSynthesis' in window)) {
-    console.log('[voice] SpeechSynthesis not available — ambient voice disabled');
+    console.log('[voice] No SpeechSynthesis — voice disabled');
     return;
   }
 
-  function go() {
+  createPlayer();
+
+  // Check API
+  apiOnline = await checkApi();
+  if (!apiOnline) {
+    console.log('[voice] API offline — retrying in 15s');
     setTimeout(async () => {
-      apiAvailable = await checkApi();
-      if (apiAvailable) {
-        watchScroll();
-        console.log('[voice] Ambient voice active (speech synthesis + API)');
-      } else {
-        console.log('[voice] API not reachable — ambient voice disabled');
-        // Retry once after 15s
-        setTimeout(async () => {
-          apiAvailable = await checkApi();
-          if (apiAvailable) {
-            watchScroll();
-            console.log('[voice] Ambient voice active (delayed)');
-          }
-        }, 15000);
+      apiOnline = await checkApi();
+      if (apiOnline) {
+        wireScrollVoice();
+        console.log('[voice] API came online (delayed)');
       }
-    }, 3000);
+    }, 15000);
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', go);
-  } else {
-    go();
+  wireOverlays();
+
+  if (apiOnline) {
+    wireScrollVoice();
+    console.log('[voice] Voice player active');
   }
-})();
+
+  // Expose globally so gallery.js and anything else can trigger voice
+  window.voicePlayer = { speak, stop };
+}
+
+const go = () => setTimeout(boot, 2500); // wait for page to settle
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
+else go();
