@@ -18,7 +18,7 @@
 
 const VOICE_CONFIG = {
   apiBase: document.querySelector('meta[name="api-base"]')?.content
-    || 'https://spark-2b7c.tail7302f3.ts.net',
+    || 'https://spark-2b7c.tail7302f3.ts.net/api',
   timeoutMs: 45000,
   volume: 0.6,
 };
