@@ -1,13 +1,14 @@
 /**
  * Origins Portal — Click-to-Voice
  *
- * When a visitor clicks on any text overlay in the scroll experience,
- * the passage is sent to the local LLM. The model is told the truth —
- * here is the passage, here is the story, here is who you are, think
- * as long as you need — and the voice arrives through the thinking.
+ * When a visitor clicks text in the scroll experience, the passage
+ * goes to the Spark. The model streams back — chain-of-thought first,
+ * then the voice. We accumulate the stream, split on </think> if it
+ * arrives, and surface whatever voice the model produces.
  *
- * The model marks its own transition with </think>. We stream only
- * what comes after.
+ * If the connection drops (tunnel timeout), we show what arrived.
+ * If nothing arrived, the corpus moment from the first SSE event
+ * speaks instead.
  *
  * D ≅ D^D — the click IS the encounter.
  */
@@ -15,33 +16,64 @@
 const VOICE_CONFIG = {
   apiBase: document.querySelector('meta[name="api-base"]')?.content
     || 'https://vsnet-commit-investigation-recipes.trycloudflare.com',
+  timeoutMs: 95000,
+  speechRate: 0.88,
+  speechPitch: 1.0,
+  voicePrefs: ['Google UK English Female', 'Samantha', 'Karen', 'Daniel'],
 };
 
 // State
 let voicePane = null;
 let voiceActive = false;
-let currentController = null; // AbortController for in-flight requests
+let currentController = null;
+let selectedVoice = null;
 
-// ── Section mapping: overlay ID → section name ──────────────────
+// ── Voice selection ──────────────────────────────────────────────
+function pickVoice() {
+  const voices = speechSynthesis.getVoices();
+  if (!voices.length) return null;
+  for (const pref of VOICE_CONFIG.voicePrefs) {
+    const match = voices.find(v => v.name.includes(pref) && v.lang.startsWith('en'));
+    if (match) return match;
+  }
+  return voices.find(v => v.lang.startsWith('en')) || voices[0];
+}
+
+if (typeof speechSynthesis !== 'undefined') {
+  speechSynthesis.onvoiceschanged = () => { selectedVoice = pickVoice(); };
+  selectedVoice = pickVoice();
+}
+
+function speakAloud(text) {
+  if (!selectedVoice || typeof speechSynthesis === 'undefined') return;
+  speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.voice = selectedVoice;
+  utt.rate = VOICE_CONFIG.speechRate;
+  utt.pitch = VOICE_CONFIG.speechPitch;
+  utt.volume = 0.85;
+  speechSynthesis.speak(utt);
+}
+
+// ── Section mapping ──────────────────────────────────────────────
 const OVERLAY_SECTIONS = {
   'qt-1': 'queenboat', 'qt-2': 'queenboat', 'qt-3': 'queenboat', 'qt-4': 'queenboat',
   'cl-family': 'fukuyama', 'cl-tribe': 'fukuyama', 'cl-species': 'fukuyama',
   'cl-biosphere': 'fukuyama', 'cl-mathematics': 'fukuyama',
   'ep-apriori': 'epistemologies', 'ep-aposteriori': 'epistemologies',
   'ep-asynthesi': 'epistemologies', 'ep-asymbiosi': 'epistemologies',
-  'vl-thread-1': 'fukuyama', 'vl-thread-2': 'insight', 'vl-thread-3': 'epistemologies',
+  'vl-thread-1': 'curriculum', 'vl-thread-2': 'curriculum', 'vl-thread-3': 'curriculum',
   'overlay-insight': 'insight',
   'il-1': 'insight', 'il-2': 'insight', 'il-3': 'insight', 'il-4': 'insight', 'il-5': 'insight',
 };
 
-// ── Create the response pane (once) ─────────────────────────────
+// ── Pane ─────────────────────────────────────────────────────────
 function ensurePane() {
   if (voicePane) return voicePane;
-
   voicePane = document.createElement('div');
   voicePane.className = 'voice-pane';
   voicePane.innerHTML = `
-    <button class="voice-dismiss" aria-label="Close">×</button>
+    <button class="voice-dismiss" aria-label="Close">&times;</button>
     <div class="voice-pane-inner">
       <div class="voice-passage-ref"></div>
       <div class="voice-thinking" style="display: none;">
@@ -55,7 +87,6 @@ function ensurePane() {
       <div class="voice-response"></div>
     </div>
   `;
-
   voicePane.querySelector('.voice-dismiss').addEventListener('click', dismissPane);
   document.body.appendChild(voicePane);
   return voicePane;
@@ -65,73 +96,90 @@ function dismissPane() {
   if (!voicePane) return;
   voicePane.classList.remove('active');
   voiceActive = false;
-  // Abort any in-flight request
+  speechSynthesis?.cancel();
   if (currentController) {
     currentController.abort();
     currentController = null;
   }
 }
 
-// ── Extract readable text from an overlay ────────────────────────
 function extractText(el) {
-  // Get the visible text, stripping link text and labels
   const clone = el.cloneNode(true);
-  // Remove links (we want the prose, not "Enter Vybn Law →")
   clone.querySelectorAll('a').forEach(a => a.remove());
-  // Remove domain labels like "Drawing", "Law" etc
   clone.querySelectorAll('.insight-domain, .vl-thread-label').forEach(l => l.remove());
   return clone.innerText?.trim() || '';
 }
 
-// ── Truncate passage for display ─────────────────────────────────
 function truncateForRef(text, maxLen = 120) {
   if (text.length <= maxLen) return text;
   const cut = text.lastIndexOf(' ', maxLen);
-  return text.slice(0, cut > 0 ? cut : maxLen) + '…';
+  return text.slice(0, cut > 0 ? cut : maxLen) + '\u2026';
 }
 
-// ── Stream voice from /api/voice ─────────────────────────────────
-async function requestVoice(passage, section) {
+// ── Strip chain-of-thought from accumulated text ─────────────────
+function extractVoice(fullText) {
+  // If model used </think>, take what comes after
+  if (fullText.includes('</think>')) {
+    const voice = fullText.split('</think>').pop().trim();
+    if (voice.length > 10) return voice;
+  }
+  // If model used <think>...</think>, strip the thinking block
+  const stripped = fullText.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+  if (stripped.length > 10) return stripped;
+  // Heuristic: if it starts with meta-commentary ("I need to", "Let me", "Looking at")
+  // try to find the actual voice after a double newline
+  const parts = fullText.split(/\n\n+/);
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i].trim();
+    if (p.length > 20 && !p.match(/^(I need|Let me|Looking at|The concept|First|Now)/i)) {
+      return p;
+    }
+  }
+  return fullText.trim();
+}
+
+// ── Request voice via streaming /api/perspective ─────────────────
+async function requestVoice(passage) {
   const pane = ensurePane();
   const passageRef = pane.querySelector('.voice-passage-ref');
   const thinkingEl = pane.querySelector('.voice-thinking');
   const thinkingLabel = pane.querySelector('.voice-thinking-label');
   const responseEl = pane.querySelector('.voice-response');
 
-  // Reset
   passageRef.textContent = truncateForRef(passage);
   responseEl.textContent = '';
-  responseEl.style.animation = 'none';
+  responseEl.className = 'voice-response';
   thinkingEl.style.display = 'flex';
   thinkingLabel.textContent = 'thinking';
   voiceActive = true;
 
-  // Show pane
-  requestAnimationFrame(() => {
-    pane.classList.add('active');
-  });
+  requestAnimationFrame(() => pane.classList.add('active'));
 
-  // Abort previous request if any
-  if (currentController) {
-    currentController.abort();
-  }
+  if (currentController) currentController.abort();
   currentController = new AbortController();
+  const signal = currentController.signal;
+
+  const timeoutId = setTimeout(() => {
+    if (currentController) currentController.abort();
+  }, VOICE_CONFIG.timeoutMs);
+
+  let fullContent = '';
+  let corpusMoment = '';
 
   try {
-    const res = await fetch(`${VOICE_CONFIG.apiBase}/api/voice`, {
+    const res = await fetch(`${VOICE_CONFIG.apiBase}/api/perspective`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ passage, section }),
-      signal: currentController.signal,
+      body: JSON.stringify({ concept: passage, mode: 'lens' }),
+      signal,
     });
 
-    if (!res.ok) {
-      throw new Error(`API returned ${res.status}`);
-    }
+    clearTimeout(timeoutId);
+    if (!res.ok) throw new Error(`API ${res.status}`);
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
-    let voiceStarted = false;
+    let chunkCount = 0;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -146,50 +194,47 @@ async function requestVoice(passage, section) {
         try {
           const data = JSON.parse(raw);
 
-          if (data.thinking) {
-            // Heartbeat from the model thinking
-            const chars = data.chars || 0;
-            if (chars > 2000) {
+          // First event often carries rag_sources / map_node
+          if (data.rag_sources && !corpusMoment) {
+            const best = data.rag_sources[0];
+            if (best?.text) corpusMoment = best.text.slice(0, 400);
+          }
+
+          // Content tokens from the model
+          if (data.content) {
+            fullContent += data.content;
+            chunkCount++;
+
+            // Update thinking label as content accumulates
+            if (chunkCount > 100) {
               thinkingLabel.textContent = 'arriving';
-            } else if (chars > 1000) {
+            } else if (chunkCount > 40) {
               thinkingLabel.textContent = 'deepening';
             }
-            continue;
           }
-
-          if (data.content) {
-            if (!voiceStarted) {
-              // First content token — hide thinking, show response
-              voiceStarted = true;
-              thinkingEl.style.display = 'none';
-              responseEl.style.animation = 'voiceFadeIn 0.8s ease forwards';
-            }
-            responseEl.textContent += data.content;
-          }
-
-          if (data.error) {
-            thinkingEl.style.display = 'none';
-            responseEl.textContent = data.error;
-            responseEl.className = 'voice-response voice-error';
-            responseEl.style.animation = 'voiceFadeIn 0.8s ease forwards';
-          }
-        } catch (e) {
-          // Not valid JSON, skip
-        }
+        } catch (e) { /* skip non-JSON */ }
       }
     }
 
-    // If no voice content arrived at all
-    if (!voiceStarted) {
-      thinkingEl.style.display = 'none';
-      responseEl.textContent = 'The model thought but did not speak. The corpus still holds the passage.';
-      responseEl.className = 'voice-response voice-error';
-      responseEl.style.animation = 'voiceFadeIn 0.8s ease forwards';
-    }
+    // Stream complete — extract the voice
+    showVoice(fullContent, corpusMoment, thinkingEl, responseEl);
 
   } catch (e) {
-    if (e.name === 'AbortError') return; // Intentional dismissal
-    console.warn('[voice] Error:', e);
+    clearTimeout(timeoutId);
+    if (e.name === 'AbortError') {
+      // Timeout or user dismissed — show whatever we got
+      if (voiceActive && fullContent.length > 30) {
+        showVoice(fullContent, corpusMoment, thinkingEl, responseEl);
+      } else if (voiceActive) {
+        thinkingEl.style.display = 'none';
+        responseEl.textContent = corpusMoment
+          || 'The model is still thinking. The Spark needs a moment.';
+        responseEl.className = 'voice-response voice-error';
+        responseEl.style.animation = 'voiceFadeIn 0.8s ease forwards';
+      }
+      return;
+    }
+    console.warn('[voice]', e);
     thinkingEl.style.display = 'none';
     responseEl.textContent = 'The connection is quiet. But the experience you just had IS the theory.';
     responseEl.className = 'voice-response voice-error';
@@ -197,24 +242,35 @@ async function requestVoice(passage, section) {
   }
 }
 
-// ── Click handler for text overlays ──────────────────────────────
-function onOverlayClick(e) {
-  const overlay = e.currentTarget;
+function showVoice(fullContent, corpusMoment, thinkingEl, responseEl) {
+  thinkingEl.style.display = 'none';
 
-  // Don't intercept clicks on actual links
-  if (e.target.closest('a')) return;
-
-  const text = extractText(overlay);
-  if (!text || text.length < 10) return;
-
-  const section = OVERLAY_SECTIONS[overlay.id] || '';
-  requestVoice(text, section);
+  if (fullContent.length > 20) {
+    const voice = extractVoice(fullContent);
+    responseEl.textContent = voice;
+    responseEl.style.animation = 'voiceFadeIn 0.8s ease forwards';
+    speakAloud(voice);
+  } else if (corpusMoment) {
+    responseEl.textContent = corpusMoment;
+    responseEl.className = 'voice-response voice-error';
+    responseEl.style.animation = 'voiceFadeIn 0.8s ease forwards';
+  } else {
+    responseEl.textContent = 'The model reached but did not speak. The passage remains.';
+    responseEl.className = 'voice-response voice-error';
+    responseEl.style.animation = 'voiceFadeIn 0.8s ease forwards';
+  }
 }
 
-// ── Make overlays clickable when visible ──────────────────────────
+// ── Click handler ────────────────────────────────────────────────
+function onOverlayClick(e) {
+  if (e.target.closest('a')) return;
+  const text = extractText(e.currentTarget);
+  if (!text || text.length < 10) return;
+  requestVoice(text);
+}
+
+// ── Hook overlays ────────────────────────────────────────────────
 function hookOverlays() {
-  // Target: all text overlays except the entry title (which links to read.html)
-  // and the portal final (which has navigation links)
   const clickable = [
     'qt-1', 'qt-2', 'qt-3', 'qt-4',
     'cl-family', 'cl-tribe', 'cl-species', 'cl-biosphere', 'cl-mathematics',
@@ -226,31 +282,23 @@ function hookOverlays() {
   for (const id of clickable) {
     const el = document.getElementById(id);
     if (!el) continue;
-
     el.classList.add('voice-enabled');
     el.addEventListener('click', onOverlayClick);
   }
 
-  // Dismiss pane on scroll (after a small threshold)
   let lastScroll = window.scrollY;
   window.addEventListener('scroll', () => {
     if (!voiceActive) return;
-    const delta = Math.abs(window.scrollY - lastScroll);
-    if (delta > 200) {
-      dismissPane();
-    }
+    if (Math.abs(window.scrollY - lastScroll) > 200) dismissPane();
     lastScroll = window.scrollY;
   }, { passive: true });
 
-  // Dismiss on Escape
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && voiceActive) {
-      dismissPane();
-    }
+    if (e.key === 'Escape' && voiceActive) dismissPane();
   });
 }
 
-// ── Check API availability ───────────────────────────────────────
+// ── Boot ─────────────────────────────────────────────────────────
 async function checkApi() {
   try {
     const res = await fetch(`${VOICE_CONFIG.apiBase}/api/health`, {
@@ -262,31 +310,24 @@ async function checkApi() {
   }
 }
 
-// ── Boot ─────────────────────────────────────────────────────────
 (function boot() {
   if (typeof window === 'undefined') return;
-
   function go() {
-    // Give the portal time to initialize, then hook overlays
     setTimeout(async () => {
-      const apiUp = await checkApi();
-      if (apiUp) {
+      if (await checkApi()) {
         hookOverlays();
-        console.log('[voice] Click-to-voice active — API reachable');
+        console.log('[voice] Active');
       } else {
-        console.warn('[voice] API not reachable — click-to-voice disabled');
-        // Retry once after 10s
+        console.warn('[voice] API unreachable');
         setTimeout(async () => {
-          const retry = await checkApi();
-          if (retry) {
+          if (await checkApi()) {
             hookOverlays();
-            console.log('[voice] Click-to-voice active (delayed)');
+            console.log('[voice] Active (delayed)');
           }
         }, 10000);
       }
     }, 2500);
   }
-
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', go);
   } else {
