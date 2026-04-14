@@ -92,6 +92,13 @@ function expandSlot(slot) {
   if (expandedSlot === slot) return;
   expandedSlot = slot;
 
+  // Kill drift animation completely — it conflicts with transform
+  slot.style.animation = 'none';
+  slot.style.translate = 'none';
+
+  // Force layout so the browser registers the animation stop before we read position
+  void slot.offsetHeight;
+
   const rect = slot.getBoundingClientRect();
   const slotCx = rect.left + rect.width / 2;
   const slotCy = rect.top + rect.height / 2;
@@ -103,7 +110,7 @@ function expandSlot(slot) {
   const dx = vpCx - slotCx;
   const dy = vpCy - slotCy;
 
-  // Target size: 70% of the smaller viewport dimension
+  // Target size: 65% of the smaller viewport dimension
   const targetSize = Math.min(window.innerWidth, window.innerHeight) * 0.65;
   const currentSize = rect.width;
   const scaleFactor = targetSize / currentSize;
@@ -142,6 +149,12 @@ function collapseSlot(slot) {
   slot.style.borderRadius = '';
   slot.style.boxShadow = '';
   slot.classList.remove('expanded');
+
+  // Restore drift animation after collapse transition finishes
+  setTimeout(() => {
+    slot.style.animation = '';
+    slot.style.translate = '';
+  }, 500);
 
   // Hide scrim
   document.querySelector('.nft-scrim')?.classList.remove('active');
