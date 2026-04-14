@@ -1006,7 +1006,6 @@ body {
   border-radius: 8px;
   overflow: visible;
   opacity: 0;
-  /* scale/opacity/box-shadow animate on hover; translate is set by JS drift */
   transition: scale 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94),
               opacity 0.8s ease,
               box-shadow 0.5s ease,
@@ -1015,14 +1014,13 @@ body {
   cursor: pointer;
   border: 1px solid rgba(212, 165, 116, 0.08);
   box-shadow: 0 2px 20px rgba(0, 0, 0, 0.4);
-  transform-origin: center center;
 }
 .nft-slot.visible {
   opacity: 0.7;
 }
-/* Calm hover enlarge — pure CSS, no JS repositioning */
+/* Calm hover enlarge — scales toward viewport center, not off-edge */
 .nft-slot.hovered {
-  scale: 2.8;
+  scale: 2.5;
   opacity: 1;
   z-index: 50;
   border-color: rgba(212, 165, 116, 0.3);
@@ -1055,10 +1053,10 @@ body {
   letter-spacing: 0.04em;
 }
 
-/* 3 floating positions — JS drift via translate property */
-.nft-pos-0 { left: 4%; top: 22%; }
-.nft-pos-1 { right: 3%; top: 48%; }
-.nft-pos-2 { left: 6%; bottom: 14%; }
+/* 3 floating positions — transform-origin pushes enlargement toward center */
+.nft-pos-0 { left: 4%; top: 22%; transform-origin: left center; }
+.nft-pos-1 { right: 3%; top: 48%; transform-origin: right center; }
+.nft-pos-2 { left: 6%; bottom: 14%; transform-origin: left bottom; }
 
 /* Title overlay on hover */
 .nft-title {
@@ -1081,7 +1079,8 @@ body {
 
 @media (max-width: 640px) {
   .nft-slot { width: clamp(90px, 22vw, 130px); height: clamp(90px, 22vw, 130px); }
-  .nft-pos-0 { left: 2%; top: 18%; }
-  .nft-pos-1 { right: 2%; top: 42%; }
-  .nft-pos-2 { left: 3%; bottom: 10%; }
+  .nft-slot.hovered { scale: 2; }
+  .nft-pos-0 { left: 2%; top: 18%; transform-origin: left center; }
+  .nft-pos-1 { right: 2%; top: 42%; transform-origin: right center; }
+  .nft-pos-2 { left: 3%; bottom: 10%; transform-origin: left bottom; }
 }
