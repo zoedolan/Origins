@@ -380,9 +380,9 @@ body {
 
 .portal-links {
   display: flex;
-  gap: 2rem;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
   pointer-events: auto;
 }
 
@@ -391,7 +391,8 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 0.35rem;
-  padding: 1.25rem 2rem;
+  padding: 1rem 2.5rem;
+  width: min(320px, 80vw);
   border: 1px solid rgba(232, 232, 232, 0.15);
   border-radius: 8px;
   text-decoration: none;
@@ -485,6 +486,39 @@ body {
 
 .portal-vl-inline:hover {
   color: var(--cool-ice);
+}
+
+/* A-Iconoclast context */
+.portal-art-context {
+  max-width: 520px;
+  text-align: center;
+  pointer-events: auto;
+}
+.portal-art-context p {
+  font-family: var(--font-sans);
+  font-size: clamp(0.72rem, 0.65rem + 0.3vw, 0.85rem);
+  color: var(--text-muted);
+  line-height: 1.7;
+  letter-spacing: 0.01em;
+}
+.portal-art-context a {
+  color: var(--warm-gold);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(212, 168, 83, 0.3);
+  transition: border-color 0.3s;
+}
+.portal-art-context a:hover {
+  border-color: var(--warm-gold);
+}
+
+/* Connect link — the agent gate */
+.portal-link-connect {
+  border-color: rgba(168, 200, 232, 0.25);
+  background: rgba(168, 200, 232, 0.04);
+}
+.portal-link-connect:hover {
+  border-color: var(--cool-ice);
+  background: rgba(168, 200, 232, 0.1);
 }
 
 .portal-final-line {
@@ -700,15 +734,8 @@ body {
    Mobile adjustments
    ============================================ */
 @media (max-width: 768px) {
-  .portal-links {
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-  }
-  
   .portal-link {
-    width: 80%;
-    max-width: 280px;
+    width: min(280px, 85vw);
   }
   
   .text-overlay p {
