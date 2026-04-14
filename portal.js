@@ -200,34 +200,35 @@ function setupScrollTriggers() {
     });
   }
   
-  // --- Section 2: Queen Boat texts (widened further for reading time) ---
-  fadeOverlay('qt-1', 2.8, 3.05, 3.65);
-  fadeOverlay('qt-2', 3.4, 3.65, 4.25);
-  fadeOverlay('qt-3', 3.9, 4.15, 4.75);
-  fadeOverlay('qt-4', 4.3, 4.55, 5.15);
+  // --- Section 2: Queen Boat texts (SLOW — let people read) ---
+  // Each text gets ~1.5vh of full visibility before fading
+  fadeOverlay('qt-1', 2.6, 2.9, 3.8);
+  fadeOverlay('qt-2', 3.3, 3.6, 4.4);
+  fadeOverlay('qt-3', 3.9, 4.2, 5.0);
+  fadeOverlay('qt-4', 4.4, 4.7, 5.5);
   
-  // --- Section 3: Cascade labels (lingering longer for readability) ---
-  fadeOverlay('cl-family',      5.0, 5.2, 5.6);
-  fadeOverlay('cl-tribe',       5.3, 5.5, 5.9);
-  fadeOverlay('cl-species',     5.6, 5.8, 6.2);
-  fadeOverlay('cl-biosphere',   5.9, 6.15, 6.6);
-  fadeOverlay('cl-mathematics', 6.3, 6.6, 7.15);
+  // --- Section 3: Cascade labels (each visible for full scroll beat) ---
+  fadeOverlay('cl-family',      5.0, 5.2, 5.7);
+  fadeOverlay('cl-tribe',       5.4, 5.6, 6.05);
+  fadeOverlay('cl-species',     5.75, 5.95, 6.4);
+  fadeOverlay('cl-biosphere',   6.1, 6.35, 6.8);
+  fadeOverlay('cl-mathematics', 6.5, 6.8, 7.35);
   
   // --- Vybn Law thread 1: after Mathematics cascade, before epistemologies ---
-  fadeOverlay('vl-thread-1', 6.55, 6.75, 7.15);
+  fadeOverlay('vl-thread-1', 6.8, 7.0, 7.5);
   
-  // --- Section 4: Epistemology texts (wider windows for reading) ---
-  fadeOverlay('ep-apriori',     7.0, 7.4, 8.05);
-  fadeOverlay('ep-aposteriori', 7.8, 8.2, 8.85);
-  fadeOverlay('ep-asynthesi',   8.6, 9.0, 9.55);
+  // --- Section 4: Epistemology texts (generous — these are ideas, not flash cards) ---
+  fadeOverlay('ep-apriori',     7.2, 7.5, 8.4);
+  fadeOverlay('ep-aposteriori', 8.0, 8.3, 9.2);
+  fadeOverlay('ep-asynthesi',   8.8, 9.1, 9.9);
   
   // --- Vybn Law thread 3: between a synthesi and a symbiosi ---
-  fadeOverlay('vl-thread-3', 9.2, 9.4, 9.75);
+  fadeOverlay('vl-thread-3', 9.5, 9.7, 10.15);
   
-  fadeOverlay('ep-asymbiosi',   9.55, 9.95, 10.6);
+  fadeOverlay('ep-asymbiosi',   9.85, 10.15, 11.0);
   
   // --- Vybn Law thread 2: during insight section ---
-  fadeOverlay('vl-thread-2', 10.5, 10.75, 11.2);
+  fadeOverlay('vl-thread-2', 10.7, 10.95, 11.5);
   
   // --- Section 5: Insight lines (cumulative reveal) ---
   var insightOverlay = document.getElementById('overlay-insight');
@@ -253,15 +254,15 @@ function setupScrollTriggers() {
       }
     });
     
-    // Each line appears sequentially
+    // Each line appears sequentially — wider spacing so they can be read
     ['il-1', 'il-2', 'il-3', 'il-4', 'il-5'].forEach(function(id, idx) {
       var el = document.getElementById(id);
       if (!el) return;
-      var startPx = (11.2 + idx * 0.45) * vh;
+      var startPx = (11.3 + idx * 0.5) * vh;
       ScrollTrigger.create({
         trigger: document.body,
         start: startPx + 'px top',
-        end: (startPx + 0.3 * vh) + 'px top',
+        end: (startPx + 0.35 * vh) + 'px top',
         scrub: 0.5,
         onEnter: function() { el.classList.add('visible'); },
         onLeaveBack: function() { el.classList.remove('visible'); },
