@@ -4,6 +4,10 @@
  * A persistent, unobtrusive player at the bottom-right of the viewport.
  * Everything that wants to speak routes through window.voicePlayer.speak().
  *
+ * LAZY: No network requests on page load. The first interaction triggers
+ * a health check; subsequent calls reuse the cached result. Visitors
+ * who never click an image never contact the Spark at all.
+ *
  * Flow:
  *   1. Caller provides a prompt (NFT metadata, overlay text, section concept)
  *   2. Prompt is sent to /api/voice — the LLM generates a FRESH reflection
@@ -25,13 +29,16 @@ let statusEl = null;
 let titleEl = null;
 let closeBtn = null;
 let controller = null;
-let apiOnline = null;
+let apiOnline = null;          // null = not checked yet, true/false after check
 let currentAudio = null;
-let isSpeaking = false;       // mutex: only one voice pipeline at a time
-let lastClickSpeak = 0;       // timestamp of last click-triggered speak
+let isSpeaking = false;        // mutex: only one voice pipeline at a time
+let lastClickSpeak = 0;        // timestamp of last click-triggered speak
+let playerCreated = false;
 
 // ── Create the player UI ─────────────────────────────────────────
 function createPlayer() {
+  if (playerCreated) return;
+  playerCreated = true;
   playerEl = document.createElement('div');
   playerEl.className = 'voice-player';
   playerEl.innerHTML = `
@@ -53,13 +60,14 @@ function createPlayer() {
 }
 
 function showPlayer(title, status) {
+  createPlayer();
   titleEl.textContent = title || '';
   statusEl.textContent = status || 'thinking…';
   playerEl.classList.add('visible');
 }
 
 function hidePlayer() {
-  playerEl.classList.remove('visible');
+  if (playerEl) playerEl.classList.remove('visible');
 }
 
 function setStatus(s) {
@@ -111,6 +119,19 @@ function clean(t) {
   }
 
   return t;
+}
+
+// ── Lazy health check — only on first interaction ────────────────
+async function ensureApiChecked() {
+  if (apiOnline !== null) return apiOnline;
+  try {
+    const r = await fetch(`${VOICE.apiBase}/api/health`, { signal: AbortSignal.timeout(5000) });
+    apiOnline = r.ok;
+  } catch {
+    apiOnline = false;
+  }
+  console.log(`[voice] API check (lazy): ${apiOnline}`);
+  return apiOnline;
 }
 
 // ── Step 1: Get LLM reflection text via /api/voice ───────────────
@@ -185,8 +206,11 @@ function playAudio(url) {
 
 // ── Core: send prompt to LLM, then speak via ElevenLabs ──────────
 async function speak(prompt, title, sectionHint, { fromClick = false } = {}) {
-  console.log(`[voice] speak() — api=${apiOnline}, click=${fromClick}, title="${title}", prompt="${(prompt||'').slice(0,60)}…"`);
-  if (!apiOnline) {
+  console.log(`[voice] speak() — click=${fromClick}, title="${title}", prompt="${(prompt||'').slice(0,60)}…"`);
+
+  // Lazy API check — first call to speak() triggers the only network request
+  const online = await ensureApiChecked();
+  if (!online) {
     console.warn('[voice] API offline — skipping');
     return;
   }
@@ -245,14 +269,6 @@ function stop() {
   hidePlayer();
 }
 
-// ── Health check ─────────────────────────────────────────────────
-async function checkApi() {
-  try {
-    const r = await fetch(`${VOICE.apiBase}/api/health`, { signal: AbortSignal.timeout(5000) });
-    return r.ok;
-  } catch { return false; }
-}
-
 // ── Wire up text overlays as voice triggers ──────────────────────
 function wireOverlays() {
   document.querySelectorAll('.text-overlay').forEach(overlay => {
@@ -279,8 +295,12 @@ const SECTION_PROMPTS = {
 };
 
 const spokenSections = new Set();
+let scrollWired = false;
 
 function wireScrollVoice() {
+  if (scrollWired) return;
+  scrollWired = true;
+
   const sectionNames = ['entry', 'question', 'queenboat', 'fukuyama', 'epistemologies', 'insight', 'portal'];
   const sections = document.querySelectorAll('.portal-section[data-section]');
   let cumHeight = 0;
@@ -302,12 +322,13 @@ function wireScrollVoice() {
         if (name !== last) {
           last = name;
           const sp = SECTION_PROMPTS[name];
-          if (sp && !spokenSections.has(name) && apiOnline) {
+          if (sp && !spokenSections.has(name)) {
             // Don't fire scroll voice within 5s of a click-triggered voice
             if (Date.now() - lastClickSpeak < 5000) {
               console.log(`[voice] Scroll voice suppressed (recent click)`);
             } else {
               spokenSections.add(name);
+              // speak() will lazily check the API on first call
               speak(sp.prompt, sp.title, name, { fromClick: false });
             }
           }
@@ -318,38 +339,12 @@ function wireScrollVoice() {
   }, { passive: true });
 }
 
-// ── Boot ─────────────────────────────────────────────────────────
-async function boot() {
-  createPlayer();
-
-  console.log(`[voice] Checking API at ${VOICE.apiBase}/api/health`);
-  apiOnline = await checkApi();
-  console.log(`[voice] API: ${apiOnline}`);
-
-  if (!apiOnline) {
-    console.log('[voice] API offline — retrying in 10s and 30s');
-    setTimeout(async () => {
-      apiOnline = await checkApi();
-      console.log(`[voice] Retry 1: ${apiOnline}`);
-      if (apiOnline) wireScrollVoice();
-    }, 10000);
-    setTimeout(async () => {
-      if (!apiOnline) {
-        apiOnline = await checkApi();
-        console.log(`[voice] Retry 2: ${apiOnline}`);
-        if (apiOnline) wireScrollVoice();
-      }
-    }, 30000);
-  }
-
+// ── Boot — NO network requests, just wire up event handlers ──────
+function boot() {
   wireOverlays();
-
-  if (apiOnline) {
-    wireScrollVoice();
-    console.log('[voice] Voice player active (ElevenLabs)');
-  }
-
+  wireScrollVoice();
   window.voicePlayer = { speak, stop };
+  console.log('[voice] Voice player ready (lazy — no network until interaction)');
 }
 
 const go = () => setTimeout(boot, 2500);
