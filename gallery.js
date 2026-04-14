@@ -2,7 +2,7 @@
  * Origins Portal — A-Iconoclast Gallery
  *
  * 139 images cycle through 3 floating positions as the visitor scrolls.
- * Hover: image glides to viewport center and enlarges.
+ * Hover: image calmly enlarges in place with a smooth CSS transition.
  * Click: fetch IPFS metadata, send as prompt to voice player.
  */
 
@@ -17,13 +17,12 @@ const SLOT_COUNT = 3;
 let slotEls = [];
 let currentBase = 1;
 let scrollTicking = false;
-let expandedSlot = null;
-let collapsingSlot = null;   // slot currently animating back — drift must not touch
+let hoveredSlot = null;
 let driftRAF = null;
 
-// ── Gentle drift via JS (no CSS animations to conflict) ──────────
+// ── Gentle drift via JS ──────────────────────────────────────────
 const driftState = [];
-const DRIFT_RANGE = 8; // pixels
+const DRIFT_RANGE = 6; // pixels — subtle
 
 function startDrift() {
   for (let i = 0; i < SLOT_COUNT; i++) {
@@ -31,7 +30,7 @@ function startDrift() {
       x: 0, y: 0,
       tx: (Math.random() - 0.5) * DRIFT_RANGE * 2,
       ty: (Math.random() - 0.5) * DRIFT_RANGE * 2,
-      speed: 0.003 + Math.random() * 0.004,
+      speed: 0.002 + Math.random() * 0.003,
     };
   }
 
@@ -39,19 +38,19 @@ function startDrift() {
     for (let i = 0; i < SLOT_COUNT; i++) {
       const s = driftState[i];
       const el = slotEls[i]?.slot;
-      if (!el || el === expandedSlot || el === collapsingSlot) continue;
+      if (!el) continue;
+      // Pause drift while hovered — but keep tracking position
+      if (el === hoveredSlot) continue;
 
-      // Ease toward target
       s.x += (s.tx - s.x) * s.speed;
       s.y += (s.ty - s.y) * s.speed;
 
-      // Pick new target when close
-      if (Math.abs(s.tx - s.x) < 0.5 && Math.abs(s.ty - s.y) < 0.5) {
+      if (Math.abs(s.tx - s.x) < 0.3 && Math.abs(s.ty - s.y) < 0.3) {
         s.tx = (Math.random() - 0.5) * DRIFT_RANGE * 2;
         s.ty = (Math.random() - 0.5) * DRIFT_RANGE * 2;
       }
 
-      el.style.transform = `translate(${s.x.toFixed(1)}px, ${s.y.toFixed(1)}px)`;
+      el.style.translate = `${s.x.toFixed(1)}px ${s.y.toFixed(1)}px`;
     }
     driftRAF = requestAnimationFrame(tick);
   }
@@ -82,32 +81,25 @@ function init() {
     title.className = 'nft-title';
 
     slot.append(img, num, title);
-    // Debounced hover — prevents rapid expand/collapse from drift movement
-    let hoverTimer = null;
+
     slot.addEventListener('mouseenter', () => {
-      clearTimeout(hoverTimer);
-      hoverTimer = setTimeout(() => expandSlot(slot), 80);
+      hoveredSlot = slot;
+      slot.classList.add('hovered');
     });
     slot.addEventListener('mouseleave', () => {
-      clearTimeout(hoverTimer);
-      collapseSlot(slot);
+      if (hoveredSlot === slot) hoveredSlot = null;
+      slot.classList.remove('hovered');
     });
     slot.addEventListener('click', (e) => {
       e.stopPropagation();
       onClickSlot(slot);
     });
+
     wrap.appendChild(slot);
     slotEls.push({ slot, img, num, title });
   }
 
   document.body.appendChild(wrap);
-
-  // Scrim
-  const scrim = document.createElement('div');
-  scrim.className = 'nft-scrim';
-  scrim.addEventListener('click', () => { if (expandedSlot) collapseSlot(expandedSlot); });
-  document.body.appendChild(scrim);
-
   fillSlots(1);
   window.addEventListener('scroll', onScroll, { passive: true });
   startDrift();
@@ -133,93 +125,12 @@ function fillSlots(base) {
   });
 }
 
-// ── Hover expand/collapse ────────────────────────────────────────
-
-function expandSlot(slot) {
-  if (expandedSlot === slot) return;
-  if (expandedSlot) collapseSlot(expandedSlot);
-  expandedSlot = slot;
-  collapsingSlot = null; // cancel any in-progress collapse on this slot
-
-  // Freeze drift position so we calculate from a stable point
-  const idx = slotEls.findIndex(s => s.slot === slot);
-  const d = driftState[idx] || { x: 0, y: 0 };
-
-  // Get the slot's CSS-positioned origin (without drift)
-  // We temporarily clear transform to read the true rect
-  const savedTransform = slot.style.transform;
-  slot.style.transition = 'none';
-  slot.style.transform = 'none';
-  const baseRect = slot.getBoundingClientRect();
-  slot.style.transform = savedTransform;
-
-  // Calculate offset from slot center to viewport center
-  const slotCx = baseRect.left + baseRect.width / 2;
-  const slotCy = baseRect.top + baseRect.height / 2;
-  const vpCx = window.innerWidth / 2;
-  const vpCy = window.innerHeight / 2;
-  const dx = vpCx - slotCx;
-  const dy = vpCy - slotCy;
-
-  // Scale to 60% of smaller viewport dimension
-  const targetSize = Math.min(window.innerWidth, window.innerHeight) * 0.6;
-  const scale = targetSize / baseRect.width;
-
-  // Force reflow before enabling transition
-  void slot.offsetHeight;
-  slot.style.transition = 'transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease, box-shadow 0.3s ease';
-  slot.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`;
-  slot.style.opacity = '1';
-  slot.style.zIndex = '50';
-  slot.style.boxShadow = '0 12px 80px rgba(212, 165, 116, 0.25), 0 0 120px rgba(0, 0, 0, 0.6)';
-  slot.classList.add('expanded');
-  document.querySelector('.nft-scrim')?.classList.add('active');
-
-  // Prefetch title
-  const id = parseInt(slot.dataset.tokenId, 10);
-  if (id) fetchMeta(id).then(m => {
-    if (m?.name) {
-      const t = slot.querySelector('.nft-title');
-      if (t) t.textContent = m.name;
-    }
-  });
-}
-
-function collapseSlot(slot) {
-  if (expandedSlot !== slot) return;
-  expandedSlot = null;
-  collapsingSlot = slot; // protect from drift during animation
-
-  // Get drift position to return to
-  const idx = slotEls.findIndex(s => s.slot === slot);
-  const d = driftState[idx] || { x: 0, y: 0 };
-
-  slot.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s ease, box-shadow 0.3s ease';
-  slot.style.transform = `translate(${d.x.toFixed(1)}px, ${d.y.toFixed(1)}px)`;
-  slot.style.opacity = '';
-  slot.style.zIndex = '';
-  slot.style.boxShadow = '';
-  slot.classList.remove('expanded');
-  document.querySelector('.nft-scrim')?.classList.remove('active');
-
-  // Release to drift after animation completes
-  slot.addEventListener('transitionend', function onEnd(e) {
-    if (e.propertyName !== 'transform') return;
-    slot.removeEventListener('transitionend', onEnd);
-    if (collapsingSlot === slot) {
-      collapsingSlot = null;
-      slot.style.transition = 'none'; // let JS drift take over cleanly
-    }
-  });
-}
-
 // ── Scroll ───────────────────────────────────────────────────────
 
 function onScroll() {
   if (scrollTicking) return;
   scrollTicking = true;
   requestAnimationFrame(() => {
-    if (expandedSlot) collapseSlot(expandedSlot);
     const max = document.documentElement.scrollHeight - window.innerHeight;
     const p = Math.max(0, Math.min(1, window.scrollY / max));
     const target = Math.floor(p * (GALLERY.total - SLOT_COUNT)) + 1;
