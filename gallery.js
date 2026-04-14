@@ -5,6 +5,9 @@
  * floating positions as the visitor scrolls. Click any image to
  * send its metadata to the LLM as a prompt for a fresh voice
  * reflection — the metadata is the seed, not the script.
+ *
+ * Hover: image glides toward the center of the viewport and enlarges
+ * to near full-view. Release: it drifts back to its floating position.
  */
 
 const GALLERY = {
@@ -20,6 +23,7 @@ const SLOT_COUNT = 3;
 let slotEls = [];
 let currentBase = 1;
 let scrollTicking = false;
+let expandedSlot = null; // track which slot is currently expanded
 
 function init() {
   const wrap = document.createElement('div');
@@ -39,13 +43,26 @@ function init() {
     const num = document.createElement('span');
     num.className = 'nft-num';
 
-    slot.append(img, num);
+    // Title overlay shown on hover
+    const title = document.createElement('span');
+    title.className = 'nft-title';
+
+    slot.append(img, num, title);
     slot.addEventListener('click', () => onClickSlot(slot));
+    slot.addEventListener('mouseenter', () => expandSlot(slot));
+    slot.addEventListener('mouseleave', () => collapseSlot(slot));
     wrap.appendChild(slot);
-    slotEls.push({ slot, img, num });
+    slotEls.push({ slot, img, num, title });
   }
 
   document.body.appendChild(wrap);
+
+  // Add the scrim for expanded state
+  const scrim = document.createElement('div');
+  scrim.className = 'nft-scrim';
+  scrim.addEventListener('click', () => { if (expandedSlot) collapseSlot(expandedSlot); });
+  document.body.appendChild(scrim);
+
   fillSlots(1);
   window.addEventListener('scroll', onScroll, { passive: true });
 }
@@ -62,14 +79,81 @@ function fillSlots(base) {
     s.img.alt = `A-Iconoclast #${id}`;
     s.num.textContent = `#${id}`;
     s.slot.dataset.tokenId = id;
+    // Show title if we have cached metadata
+    const cached = metaCache.get(id);
+    s.title.textContent = cached?.name || '';
     setTimeout(() => s.slot.classList.add('visible'), 80 + i * 150);
   });
+}
+
+// ── Hover expand/collapse ────────────────────────────────────────
+
+function expandSlot(slot) {
+  if (expandedSlot === slot) return;
+  expandedSlot = slot;
+
+  const rect = slot.getBoundingClientRect();
+  const slotCx = rect.left + rect.width / 2;
+  const slotCy = rect.top + rect.height / 2;
+
+  const vpCx = window.innerWidth / 2;
+  const vpCy = window.innerHeight / 2;
+
+  // How far to move to reach center
+  const dx = vpCx - slotCx;
+  const dy = vpCy - slotCy;
+
+  // Target size: 70% of the smaller viewport dimension
+  const targetSize = Math.min(window.innerWidth, window.innerHeight) * 0.65;
+  const currentSize = rect.width;
+  const scaleFactor = targetSize / currentSize;
+
+  slot.style.transition = 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease, box-shadow 0.4s ease';
+  slot.style.transform = `translate(${dx}px, ${dy}px) scale(${scaleFactor})`;
+  slot.style.opacity = '1';
+  slot.style.zIndex = '50';
+  slot.style.borderRadius = '10px';
+  slot.style.boxShadow = '0 12px 80px rgba(212, 165, 116, 0.25), 0 0 120px rgba(0, 0, 0, 0.6)';
+  slot.classList.add('expanded');
+
+  // Show scrim
+  document.querySelector('.nft-scrim')?.classList.add('active');
+
+  // Prefetch metadata for the title
+  const id = parseInt(slot.dataset.tokenId, 10);
+  if (id) {
+    fetchMeta(id).then(meta => {
+      if (meta?.name) {
+        const titleEl = slot.querySelector('.nft-title');
+        if (titleEl) titleEl.textContent = meta.name;
+      }
+    });
+  }
+}
+
+function collapseSlot(slot) {
+  if (expandedSlot !== slot) return;
+  expandedSlot = null;
+
+  slot.style.transition = 'transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s ease, box-shadow 0.3s ease';
+  slot.style.transform = '';
+  slot.style.opacity = '';
+  slot.style.zIndex = '';
+  slot.style.borderRadius = '';
+  slot.style.boxShadow = '';
+  slot.classList.remove('expanded');
+
+  // Hide scrim
+  document.querySelector('.nft-scrim')?.classList.remove('active');
 }
 
 function onScroll() {
   if (scrollTicking) return;
   scrollTicking = true;
   requestAnimationFrame(() => {
+    // Collapse any expanded image on scroll
+    if (expandedSlot) collapseSlot(expandedSlot);
+
     const max = document.documentElement.scrollHeight - window.innerHeight;
     const p = Math.max(0, Math.min(1, window.scrollY / max));
     const target = Math.floor(p * (GALLERY.total - SLOT_COUNT)) + 1;
