@@ -170,6 +170,10 @@ function setupScrollTriggers() {
       scrub: 0.5,
       onUpdate: function(self) {
         el.style.opacity = self.progress;
+        // Toggle text-active for hover interactivity
+        if (self.progress > 0.3) {
+          el.classList.add('text-active');
+        }
       }
     });
     
@@ -181,6 +185,9 @@ function setupScrollTriggers() {
       scrub: 0.5,
       onUpdate: function(self) {
         el.style.opacity = 1 - self.progress;
+        if (self.progress > 0.85) {
+          el.classList.remove('text-active');
+        }
       }
     });
   }
@@ -233,6 +240,7 @@ function setupScrollTriggers() {
       scrub: 0.5,
       onUpdate: function(self) {
         insightOverlay.style.opacity = self.progress;
+        if (self.progress > 0.3) insightOverlay.classList.add('text-active');
       }
     });
     // Fade out
@@ -243,6 +251,7 @@ function setupScrollTriggers() {
       scrub: 0.5,
       onUpdate: function(self) {
         insightOverlay.style.opacity = 1 - self.progress;
+        if (self.progress > 0.85) insightOverlay.classList.remove('text-active');
       }
     });
     
@@ -256,8 +265,8 @@ function setupScrollTriggers() {
         start: startPx + 'px top',
         end: (startPx + 0.4 * vh) + 'px top',
         scrub: 0.5,
-        onEnter: function() { el.classList.add('visible'); },
-        onLeaveBack: function() { el.classList.remove('visible'); },
+        onEnter: function() { el.classList.add('visible'); el.classList.add('text-active'); },
+        onLeaveBack: function() { el.classList.remove('visible'); el.classList.remove('text-active'); },
       });
     });
   }

@@ -165,19 +165,24 @@ body {
 
 /* Interactive text overlays: hover brings text to foreground in gold.
    Applies to the narrative overlays (quote, cascade labels, epistemologies,
-   insight lines) — not the entry title or portal-final utility text. */
-.queen-text p,
-.epist-text h3,
-.cascade-label span,
-.insight-line {
+   insight lines) — not the entry title or portal-final utility text.
+   Gated by .text-active class added via JS when overlay is visible. */
+.text-active .queen-text p,
+.text-active .epist-text h3,
+.text-active .cascade-label span,
+.text-active .insight-line,
+.queen-text.text-active p,
+.epist-text.text-active h3,
+.cascade-label.text-active span,
+.insight-line.text-active {
   pointer-events: auto;
   cursor: pointer;
   transition: color 0.4s ease, transform 0.4s ease, text-shadow 0.4s ease;
 }
 
-.queen-text p:hover,
-.epist-text h3:hover,
-.cascade-label span:hover {
+.queen-text.text-active p:hover,
+.epist-text.text-active h3:hover,
+.cascade-label.text-active span:hover {
   color: #d4a853;
   transform: scale(1.06);
   text-shadow:
@@ -187,16 +192,16 @@ body {
   z-index: 20;
 }
 
-.insight-line {
+.insight-line.text-active {
   pointer-events: auto;
   cursor: pointer;
   transition: transform 0.4s ease;
 }
-.insight-line:hover {
+.insight-line.text-active:hover {
   transform: translateY(0) scale(1.06) !important;
 }
-.insight-line:hover p,
-.insight-line:hover .insight-domain {
+.insight-line.text-active:hover p,
+.insight-line.text-active:hover .insight-domain {
   color: #d4a853 !important;
   text-shadow:
     0 0 40px rgba(212, 168, 83, 0.35),
@@ -434,6 +439,8 @@ body {
 .portal-final {
   flex-direction: column;
   gap: 2.5rem;
+  padding-top: 5rem; /* clear the Vybn® brand mark at top */
+  justify-content: center;
 }
 
 .portal-gate-text {
@@ -447,14 +454,21 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 1.25rem;
-  pointer-events: auto;
+  pointer-events: none; /* default: no events until overlay is visible */
 }
 
 /* Portal links should not capture events when overlay is invisible */
 .portal-final {
   pointer-events: none;
 }
-.portal-final.visible .portal-links,
+
+/* Only enable pointer events when the overlay is actually visible */
+.portal-final.visible .portal-links {
+  pointer-events: auto;
+}
+.portal-final.visible .portal-link {
+  pointer-events: auto;
+}
 .portal-final.visible .portal-art-context {
   pointer-events: auto;
 }
@@ -472,6 +486,7 @@ body {
   color: var(--text-color);
   transition: border-color 0.3s ease, background 0.3s ease;
   backdrop-filter: blur(8px);
+  pointer-events: none; /* gated by .portal-final.visible */
   background: rgba(10, 10, 15, 0.4);
 }
 
@@ -566,7 +581,7 @@ body {
 .portal-art-context {
   max-width: 520px;
   text-align: center;
-  pointer-events: auto;
+  pointer-events: none; /* gated by .portal-final.visible */
 }
 .portal-art-context p {
   font-family: var(--font-sans);
