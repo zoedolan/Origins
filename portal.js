@@ -196,6 +196,12 @@ function setupScrollTriggers() {
       scrub: 0.5,
       onUpdate: function(self) {
         entryEl.style.opacity = 1 - self.progress;
+        // Disable pointer-events on entry links when faded out
+        var links = entryEl.querySelectorAll('.entry-title-link');
+        var active = self.progress < 0.9;
+        links.forEach(function(l) {
+          l.style.pointerEvents = active ? 'auto' : 'none';
+        });
       }
     });
   }
@@ -266,6 +272,12 @@ function setupScrollTriggers() {
       scrub: 1,
       onUpdate: function(self) {
         portalFinal.style.opacity = self.progress;
+        // Toggle visible class so portal links only capture events when visible
+        if (self.progress > 0.15) {
+          portalFinal.classList.add('visible');
+        } else {
+          portalFinal.classList.remove('visible');
+        }
       }
     });
   }

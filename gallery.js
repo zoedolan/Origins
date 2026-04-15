@@ -2,8 +2,9 @@
  * Origins Portal — A-Iconoclast Gallery
  *
  * 139 images cycle through 3 floating positions as the visitor scrolls.
- * Hover: image calmly enlarges in place with a smooth CSS transition.
- * Click: fetch IPFS metadata, send as prompt to voice player.
+ * Desktop hover: image calmly enlarges in place with a smooth CSS transition.
+ * Mobile tap: image enlarges, drifts toward center, and activates voice.
+ * Click/tap: fetch IPFS metadata, send as prompt to voice player.
  */
 
 const GALLERY = {
@@ -19,6 +20,8 @@ let currentBase = 1;
 let scrollTicking = false;
 let hoveredSlot = null;
 let driftRAF = null;
+let isMobile = window.innerWidth < 640;
+let expandedSlot = null; // tracks the currently expanded slot on mobile
 
 // ── Gentle drift via JS ──────────────────────────────────────────
 const driftState = [];
@@ -39,8 +42,8 @@ function startDrift() {
       const s = driftState[i];
       const el = slotEls[i]?.slot;
       if (!el) continue;
-      // Pause drift while hovered — but keep tracking position
-      if (el === hoveredSlot) continue;
+      // Pause drift while hovered or expanded
+      if (el === hoveredSlot || el === expandedSlot) continue;
 
       s.x += (s.tx - s.x) * s.speed;
       s.y += (s.ty - s.y) * s.speed;
@@ -60,6 +63,7 @@ function startDrift() {
 // ── Init ─────────────────────────────────────────────────────────
 
 function init() {
+  isMobile = window.innerWidth < 640;
   const wrap = document.createElement('div');
   wrap.className = 'nft-wrap';
 
@@ -68,6 +72,7 @@ function init() {
     slot.className = `nft-slot nft-pos-${i}`;
     slot.tabIndex = 0;
     slot.role = 'button';
+    slot.dataset.slotIndex = i;
 
     const img = document.createElement('img');
     img.className = 'nft-img';
@@ -82,20 +87,43 @@ function init() {
 
     slot.append(img, num, title);
 
-    slot.addEventListener('mouseenter', () => {
-      hoveredSlot = slot;
-      slot.classList.add('hovered');
-      computeHoverScale(slot);
-    });
-    slot.addEventListener('mouseleave', () => {
-      if (hoveredSlot === slot) hoveredSlot = null;
-      slot.classList.remove('hovered');
-      slot.style.scale = '';
-    });
+    // Desktop: mouse events for hover enlargement
+    if (!isMobile) {
+      slot.addEventListener('mouseenter', () => {
+        hoveredSlot = slot;
+        slot.classList.add('hovered');
+        computeHoverScale(slot);
+      });
+      slot.addEventListener('mouseleave', () => {
+        if (hoveredSlot === slot) hoveredSlot = null;
+        slot.classList.remove('hovered');
+        slot.style.scale = '';
+        slot.style.transform = '';
+      });
+    }
+
+    // Unified click/tap handler — works on both desktop and mobile
     slot.addEventListener('click', (e) => {
+      e.preventDefault();
       e.stopPropagation();
-      onClickSlot(slot);
+      e.stopImmediatePropagation();
+
+      if (isMobile) {
+        handleMobileTap(slot, i);
+      } else {
+        onClickSlot(slot);
+      }
     });
+
+    // Prevent any touchstart from propagating to underlying elements
+    slot.addEventListener('touchstart', (e) => {
+      e.stopPropagation();
+    }, { passive: true });
+
+    // Prevent touchend from triggering ghost clicks on underlying elements
+    slot.addEventListener('touchend', (e) => {
+      e.stopPropagation();
+    }, { passive: true });
 
     wrap.appendChild(slot);
     slotEls.push({ slot, img, num, title });
@@ -105,6 +133,72 @@ function init() {
   fillSlots(1);
   window.addEventListener('scroll', onScroll, { passive: true });
   startDrift();
+
+  // Listen for resize to update isMobile
+  window.addEventListener('resize', () => {
+    isMobile = window.innerWidth < 640;
+  }, { passive: true });
+
+  // On mobile, tapping outside an expanded image collapses it
+  if (isMobile) {
+    document.addEventListener('click', (e) => {
+      if (expandedSlot && !expandedSlot.contains(e.target)) {
+        collapseExpandedSlot();
+      }
+    });
+  }
+}
+
+// ── Mobile tap: expand + drift toward center + voice ─────────────
+
+function handleMobileTap(slot, slotIndex) {
+  // If this slot is already expanded, collapse it
+  if (expandedSlot === slot) {
+    collapseExpandedSlot();
+    return;
+  }
+
+  // Collapse any previously expanded slot
+  if (expandedSlot) {
+    collapseExpandedSlot(false); // don't animate, just reset
+  }
+
+  // Expand this slot: enlarge + drift toward center
+  expandedSlot = slot;
+  slot.classList.add('mobile-expanded');
+
+  // Compute scale to fill ~70% of viewport
+  const rect = slot.getBoundingClientRect();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const targetSize = Math.min(vw, vh) * 0.70;
+  const s = Math.min(targetSize / rect.width, targetSize / rect.height);
+  const clamped = Math.max(1.5, Math.min(4, s));
+
+  // Compute translation to drift toward center
+  const slotCenterX = rect.left + rect.width / 2;
+  const slotCenterY = rect.top + rect.height / 2;
+  const viewCenterX = vw / 2;
+  const viewCenterY = vh / 2;
+
+  // Drift ~80% of the way toward center (not fully — keeps it organic)
+  const driftX = (viewCenterX - slotCenterX) * 0.80;
+  const driftY = (viewCenterY - slotCenterY) * 0.80;
+
+  slot.style.scale = clamped.toFixed(2);
+  slot.style.translate = `${driftX.toFixed(1)}px ${driftY.toFixed(1)}px`;
+
+  // Trigger voice
+  onClickSlot(slot);
+}
+
+function collapseExpandedSlot(animate = true) {
+  if (!expandedSlot) return;
+  const slot = expandedSlot;
+  expandedSlot = null;
+  slot.classList.remove('mobile-expanded');
+  slot.style.scale = '';
+  slot.style.translate = '';
 }
 
 // ── Fill slots with images ───────────────────────────────────────
@@ -117,6 +211,8 @@ function fillSlots(base) {
     const src = `${GALLERY.imgBase}/${id}`;
     if (s.img.getAttribute('src') === src) return;
     s.slot.classList.remove('visible');
+    // If this slot was expanded, collapse it during image swap
+    if (expandedSlot === s.slot) collapseExpandedSlot(false);
     s.img.src = src;
     s.img.alt = `A-Iconoclast #${id}`;
     s.num.textContent = `#${id}`;
@@ -193,7 +289,7 @@ async function fetchMeta(id) {
   }
 }
 
-// ── Viewport-aware hover scale ──────────────────────────────────
+// ── Viewport-aware hover scale (desktop only) ───────────────────
 
 function computeHoverScale(slot) {
   const rect = slot.getBoundingClientRect();
@@ -205,9 +301,7 @@ function computeHoverScale(slot) {
   const vh = window.innerHeight;
 
   // Target: expanded image fills ~55% of the smaller viewport dimension
-  // On mobile: fill ~70%
-  const isMobile = vw < 640;
-  const targetFrac = isMobile ? 0.70 : 0.55;
+  const targetFrac = 0.55;
   const targetSize = Math.min(vw, vh) * targetFrac;
   const s = Math.min(targetSize / slotW, targetSize / slotH);
 

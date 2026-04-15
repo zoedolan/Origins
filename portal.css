@@ -171,12 +171,26 @@ body {
   gap: 1.2rem;
 }
 
+.entry-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: clamp(1.2rem, 3vw, 2.5rem);
+  justify-content: center;
+}
+
 .entry-title-link {
   text-decoration: none;
   color: inherit;
   pointer-events: auto;
   cursor: pointer;
   transition: color 0.4s ease;
+}
+
+/* Entry links should not capture events when scrolled past */
+@media (max-width: 640px) {
+  .entry-title .entry-title-link {
+    pointer-events: auto;
+  }
 }
 
 .entry-title-link:hover h1 {
@@ -186,13 +200,29 @@ body {
     0 0 120px rgba(10, 10, 15, 0.8);
 }
 
+.entry-title-link-law:hover h1 {
+  color: var(--cool-blue);
+  text-shadow:
+    0 0 60px rgba(74, 144, 217, 0.3),
+    0 0 120px rgba(10, 10, 15, 0.8);
+}
+
+/* Dual-track breath: hovering one gently dims the other */
+.entry-title-row:hover .entry-title-link h1 {
+  opacity: 0.45;
+  transition: opacity 0.5s ease, color 0.4s ease, text-shadow 0.4s ease;
+}
+.entry-title-row:hover .entry-title-link:hover h1 {
+  opacity: 1;
+}
+
 .entry-title h1 {
   font-family: var(--font-serif);
   font-size: clamp(2.5rem, 2rem + 3vw, 5rem);
   font-weight: 600;
   letter-spacing: 0.04em;
   color: var(--text-color);
-  transition: color 0.4s ease, text-shadow 0.4s ease;
+  transition: color 0.4s ease, text-shadow 0.4s ease, opacity 0.5s ease;
   text-shadow:
     0 0 60px rgba(10, 10, 15, 0.95),
     0 0 120px rgba(10, 10, 15, 0.8);
@@ -383,6 +413,15 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 1.25rem;
+  pointer-events: auto;
+}
+
+/* Portal links should not capture events when overlay is invisible */
+.portal-final {
+  pointer-events: none;
+}
+.portal-final.visible .portal-links,
+.portal-final.visible .portal-art-context {
   pointer-events: auto;
 }
 
@@ -1147,9 +1186,44 @@ body {
   border-radius: 0 0 8px 8px;
 }
 
+/* Mobile expanded state — smooth drift + scale */
+.nft-slot.mobile-expanded {
+  opacity: 1;
+  z-index: 60;
+  border-color: rgba(212, 165, 116, 0.35);
+  box-shadow: 0 12px 80px rgba(212, 165, 116, 0.25), 0 0 80px rgba(0, 0, 0, 0.6);
+  transition: scale 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              translate 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              opacity 0.4s ease,
+              box-shadow 0.5s ease,
+              border-color 0.4s ease;
+}
+.nft-slot.mobile-expanded .nft-title {
+  opacity: 1;
+}
+.nft-slot.mobile-expanded .nft-img {
+  border-radius: 8px;
+}
+
 @media (max-width: 640px) {
-  .nft-slot { width: clamp(90px, 22vw, 130px); height: clamp(90px, 22vw, 130px); }
-  .nft-pos-0 { left: 2%; top: 18%; transform-origin: left center; }
-  .nft-pos-1 { right: 2%; top: 42%; transform-origin: right center; }
-  .nft-pos-2 { left: 3%; bottom: 10%; transform-origin: left bottom; }
+  .nft-slot {
+    width: clamp(90px, 22vw, 130px);
+    height: clamp(90px, 22vw, 130px);
+    /* Ensure NFT slots are above text overlays on mobile */
+    z-index: 15;
+    /* Smooth return transition when collapsing */
+    transition: scale 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                translate 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                opacity 0.8s ease,
+                box-shadow 0.5s ease,
+                border-color 0.4s ease;
+  }
+  .nft-pos-0 { left: 2%; top: 18%; transform-origin: center center; }
+  .nft-pos-1 { right: 2%; top: 42%; transform-origin: center center; }
+  .nft-pos-2 { left: 3%; bottom: 10%; transform-origin: center center; }
+
+  /* Raise the NFT wrap above text overlays on mobile to prevent mis-taps */
+  .nft-wrap {
+    z-index: 15;
+  }
 }
