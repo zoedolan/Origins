@@ -192,6 +192,12 @@
   <!-- Voice player + NFT gallery -->
   <script src="./voice.js?v=20260415d"></script>
   <script src="./gallery.js?v=20260415d"></script>
-  <script data-goatcounter="https://vybn-a2j.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+      <script>
+      window.goatcounter = {
+        path: function(p) { return location.host + p }
+      }
+    </script>
+    <script data-goatcounter="https://vybn-a2j.goatcounter.com/count"
+            async src="//gc.zgo.at/count.js"></script>
 </body>
 </html>
