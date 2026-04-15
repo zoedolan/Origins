@@ -326,6 +326,63 @@
       opacity: 0.7;
       letter-spacing: 0.02em;
     }
+    
+    /* ── Inline thinking state inside message bubble ── */
+    .msg-thinking {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0.25rem 0;
+    }
+    .msg-thinking-label {
+      font-family: var(--font-sans);
+      font-size: 0.78rem;
+      font-weight: 300;
+      color: var(--warm-gold);
+      opacity: 0.7;
+      letter-spacing: 0.02em;
+    }
+    .msg-thinking-bar {
+      flex: 1;
+      height: 2px;
+      max-width: 120px;
+      border-radius: 1px;
+      background: rgba(212, 165, 116, 0.1);
+      overflow: hidden;
+      position: relative;
+    }
+    .msg-thinking-bar::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 40%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, var(--warm-gold), transparent);
+      animation: think-slide 1.6s ease-in-out infinite;
+    }
+    @keyframes think-slide {
+      0% { transform: translateX(-100%); opacity: 0.3; }
+      50% { opacity: 0.8; }
+      100% { transform: translateX(350%); opacity: 0.3; }
+    }
+    .msg-thinking-dots {
+      display: flex;
+      gap: 4px;
+    }
+    .msg-thinking-dots span {
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: var(--warm-gold);
+      opacity: 0.25;
+      animation: think-dot 1.8s ease-in-out infinite;
+    }
+    .msg-thinking-dots span:nth-child(2) { animation-delay: 0.3s; }
+    .msg-thinking-dots span:nth-child(3) { animation-delay: 0.6s; }
+    @keyframes think-dot {
+      0%, 70%, 100% { opacity: 0.2; transform: scale(1); }
+      35% { opacity: 0.8; transform: scale(1.3); }
+    }
     .typing-dots {
       display: flex;
       gap: 4px;
@@ -678,6 +735,15 @@
         typingIndicator.classList.remove('active');
         const msgEl = appendMessage('vybn', '');
         const contentEl = msgEl.querySelector('.msg-content');
+
+        // Show inline thinking state inside the bubble while buffering
+        contentEl.innerHTML = `
+          <div class="msg-thinking">
+            <span class="msg-thinking-label">thinking</span>
+            <div class="msg-thinking-bar"></div>
+            <div class="msg-thinking-dots"><span></span><span></span><span></span></div>
+          </div>
+        `;
         let fullResponse = '';
         let ragSources = [];
 
@@ -755,8 +821,8 @@
                 contentEl.innerHTML = renderMarkdown(fullResponse);
                 if (!firstContentRendered) {
                   firstContentRendered = true;
-                  contentEl.style.opacity = '0';
                   contentEl.style.transition = 'opacity 0.4s ease';
+                  contentEl.style.opacity = '0';
                   void contentEl.offsetHeight;
                   contentEl.style.opacity = '1';
                 }
