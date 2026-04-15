@@ -167,10 +167,6 @@ body {
    Applies to the narrative overlays (quote, cascade labels, epistemologies,
    insight lines) — not the entry title or portal-final utility text.
    Gated by .text-active class added via JS when overlay is visible. */
-.text-active .queen-text p,
-.text-active .epist-text h3,
-.text-active .cascade-label span,
-.text-active .insight-line,
 .queen-text.text-active p,
 .epist-text.text-active h3,
 .cascade-label.text-active span,
@@ -182,14 +178,19 @@ body {
 
 .queen-text.text-active p:hover,
 .epist-text.text-active h3:hover,
-.cascade-label.text-active span:hover {
-  color: #d4a853;
-  transform: scale(1.06);
+.cascade-label.text-active span:hover,
+#ep-apriori.text-active h3:hover,
+#ep-aposteriori.text-active h3:hover,
+#ep-asynthesi.text-active h3:hover,
+#ep-asymbiosi.text-active h3:hover {
+  color: #d4a853 !important;
+  transform: scale(1.15);
   text-shadow:
     0 0 40px rgba(212, 168, 83, 0.35),
     0 0 80px rgba(10, 10, 15, 0.8),
-    0 2px 4px rgba(0, 0, 0, 0.9);
+    0 2px 4px rgba(0, 0, 0, 0.9) !important;
   z-index: 20;
+  position: relative;
 }
 
 .insight-line.text-active {
@@ -321,10 +322,10 @@ body {
   text-shadow: 0 0 30px rgba(10, 10, 15, 0.9);
 }
 
-.ep-apriori h3 { color: var(--cool-blue); }
-.ep-aposteriori h3 { color: var(--warm-gold); }
-.ep-asynthesi h3 { color: var(--interference); }
-.ep-asymbiosi h3 { color: var(--cool-ice); }
+#ep-apriori h3 { color: var(--cool-blue); }
+#ep-aposteriori h3 { color: var(--warm-gold); }
+#ep-asynthesi h3 { color: var(--interference); }
+#ep-asymbiosi h3 { color: var(--cool-ice); }
 
 /* ============================================
    Vybn Law Thread — subtle inline invitations
@@ -1153,7 +1154,7 @@ body {
 .nft-wrap {
   position: fixed;
   inset: 0;
-  z-index: 5;
+  z-index: 12; /* above text overlays (z-index: 10) so expanded images come to front */
   pointer-events: none;
   transition: opacity 0.6s ease;
 }
@@ -1272,8 +1273,8 @@ body {
   .nft-pos-1 { right: 2%; top: 42%; transform-origin: center center; }
   .nft-pos-2 { left: 3%; bottom: 10%; transform-origin: center center; }
 
-  /* Raise the NFT wrap above text overlays on mobile to prevent mis-taps */
+  /* NFT wrap already at z-index: 12 — mobile gets slightly higher for tap priority */
   .nft-wrap {
-    z-index: 15;
+    z-index: 16;
   }
 }
