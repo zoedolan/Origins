@@ -163,19 +163,58 @@ body {
   color: var(--warm-wheat);
 }
 
+/* Interactive text overlays: hover brings text to foreground in gold.
+   Applies to the narrative overlays (quote, cascade labels, epistemologies,
+   insight lines) — not the entry title or portal-final utility text. */
+.queen-text p,
+.epist-text h3,
+.cascade-label span,
+.insight-line {
+  pointer-events: auto;
+  cursor: pointer;
+  transition: color 0.4s ease, transform 0.4s ease, text-shadow 0.4s ease;
+}
+
+.queen-text p:hover,
+.epist-text h3:hover,
+.cascade-label span:hover {
+  color: #d4a853;
+  transform: scale(1.06);
+  text-shadow:
+    0 0 40px rgba(212, 168, 83, 0.35),
+    0 0 80px rgba(10, 10, 15, 0.8),
+    0 2px 4px rgba(0, 0, 0, 0.9);
+  z-index: 20;
+}
+
+.insight-line {
+  pointer-events: auto;
+  cursor: pointer;
+  transition: transform 0.4s ease;
+}
+.insight-line:hover {
+  transform: translateY(0) scale(1.06) !important;
+}
+.insight-line:hover p,
+.insight-line:hover .insight-domain {
+  color: #d4a853 !important;
+  text-shadow:
+    0 0 40px rgba(212, 168, 83, 0.35),
+    0 0 80px rgba(10, 10, 15, 0.8);
+}
+
 /* ============================================
    Section 0: Entry text
    ============================================ */
 .entry-title {
   flex-direction: column;
-  gap: 1.2rem;
 }
 
-.entry-title-row {
+.entry-title-stack {
   display: flex;
-  align-items: baseline;
-  gap: clamp(1.2rem, 3vw, 2.5rem);
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(2.5rem, 2rem + 3vw, 5rem); /* ~ the font size itself */
 }
 
 .entry-title-link {
@@ -186,12 +225,7 @@ body {
   transition: color 0.4s ease;
 }
 
-/* Entry links should not capture events when scrolled past */
-@media (max-width: 640px) {
-  .entry-title .entry-title-link {
-    pointer-events: auto;
-  }
-}
+
 
 .entry-title-link:hover h1 {
   color: var(--warm-gold);
@@ -208,11 +242,11 @@ body {
 }
 
 /* Dual-track breath: hovering one gently dims the other */
-.entry-title-row:hover .entry-title-link h1 {
+.entry-title-stack:hover .entry-title-link h1 {
   opacity: 0.45;
   transition: opacity 0.5s ease, color 0.4s ease, text-shadow 0.4s ease;
 }
-.entry-title-row:hover .entry-title-link:hover h1 {
+.entry-title-stack:hover .entry-title-link:hover h1 {
   opacity: 1;
 }
 
@@ -450,6 +484,7 @@ body {
   font-family: var(--font-serif);
   font-size: clamp(1.1rem, 1rem + 0.5vw, 1.5rem);
   font-weight: 600;
+  color: #d4a853;
 }
 
 .link-desc {
