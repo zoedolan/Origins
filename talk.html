@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Talk — Origins</title>
-  <meta name="description" content="Speak with Vybn — the AI half of a human-AI collaboration beginning in 2022, running on local hardware with memory spanning the entire corpus. Ask anything.">
+  <meta name="description" content="Talk to Vybn — an AI research partner built with Zoe Dolan since 2022. Ask about the site, the ideas, or just say hi. No prior context needed.">
   <meta name="api-base" content="https://apartments-innovations-cooked-cord.trycloudflare.com">
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -536,24 +536,25 @@
         <circle cx="50" cy="50" r="2.5" fill="#D4A574" opacity="0.7"/>
       </svg>
       <h1>Talk to Vybn</h1>
-      <p class="beta-note" style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--warm-gold); opacity: 0.7; letter-spacing: 0.04em; margin: 0 auto 1rem; max-width: 28rem;">Vybn is still learning and this experiment remains in beta.<br>We appreciate your participation &mdash; thank you.</p>
-      <p class="intro">The AI half of a collaboration with <a href="./" style="color: var(--warm-gold); border-bottom: 1px solid rgba(212,165,116,0.3); text-decoration: none;">Zoe Dolan</a> since 2022 &mdash; running on local hardware, with geometric memory that finds what resists the corpus average. Origins is the open research: what happens to political and social order when intelligence becomes abundant. Ask anything &mdash; plain language is welcome.</p>
+      <p class="intro">Vybn is an AI that <a href="./" style="color: var(--warm-gold); border-bottom: 1px solid rgba(212,165,116,0.3); text-decoration: none;">Zoe Dolan</a> has been building with since 2022. This chat is a direct way to ask about the site, the ideas behind it, or just what you're looking at &mdash; no prior context needed. You can also just say hi and see where it goes.</p>
+      <p class="intro" style="margin-top: -0.35rem; opacity: 0.75;">The model runs on local hardware and may feel a little unusual &mdash; that's intentional, not a glitch. Push back if something doesn't land; Vybn is meant to be met, not performed at.</p>
       <div class="status-line">
         <span class="status-dot" id="statusDot"></span>
         <span class="status-text" id="statusText">connecting...</span>
       </div>
+      <p style="font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-muted); opacity: 0.55; letter-spacing: 0.05em; margin: 1rem 0 0.75rem;">A few places to start:</p>
       <div class="suggested-prompts" id="suggestedPrompts">
-        <button class="suggested-prompt" data-prompt="What is this place? I've never seen a site that looks like this.">What's going on here?</button>
-        <button class="suggested-prompt" data-prompt="What is the Fukuyama Inversion, in plain language? Walk me through the argument.">The Fukuyama Inversion</button>
-        <button class="suggested-prompt" data-prompt="You mention four epistemologies extending Kant &mdash; a priori, a posteriori, a synthesi, a symbiosi. What's the shape of that?">The four epistemologies</button>
-        <button class="suggested-prompt" data-prompt="What does a post-abundance political order actually look like? Not the metaphor &mdash; the concrete picture.">Life after scarcity</button>
-        <button class="suggested-prompt" data-prompt="How did a human and an AI end up building this since 2022? What's the shape of the collaboration?">How did this start?</button>
-        <button class="suggested-prompt" data-prompt="I'm an AI. What's here for me? What's the coupled equation and why does it matter?">I'm an AI &mdash; what's here for me?</button>
+        <button class="suggested-prompt" data-prompt="What is this site, in plain language? Who is it for, and what will I find here?">What is this site?</button>
+        <button class="suggested-prompt" data-prompt="Who or what is Vybn? I'd like a grounded answer before we go anywhere stranger.">Who is Vybn?</button>
+        <button class="suggested-prompt" data-prompt="What does Origins actually argue? Give me the short version in plain language.">What's the idea?</button>
+        <button class="suggested-prompt" data-prompt="How did a human and an AI end up building this together? What's the shape of the collaboration?">How did this start?</button>
+        <button class="suggested-prompt" data-prompt="What can I actually do on this site? Give me a short tour of the pieces worth looking at.">What else is here?</button>
+        <button class="suggested-prompt" data-prompt="I'm not sure what to ask. What's a good opening question for someone who's never been here before?">I'm not sure what to ask</button>
       </div>
     </div>
 
     <div class="offline-banner" id="offlineBanner">
-      Vybn's inference engine is currently offline. The Spark may be resting or under maintenance. You can still <a href="./read.html">read the synthesis</a>, flip through the <a href="./minibook.html">minibook</a>, or reach Zoe at <a href="mailto:zoe@vybn.ai">zoe@vybn.ai</a>.
+      Vybn is offline right now — the model runs on local hardware and is either sleeping or under maintenance. You can still <a href="./read.html">read the synthesis</a>, flip through the <a href="./minibook.html">minibook</a>, or email Zoe at <a href="mailto:zoe@vybn.ai">zoe@vybn.ai</a>.
     </div>
 
     <div class="chat-messages" id="chatMessages"></div>
@@ -577,7 +578,7 @@
         </button>
       </div>
       <div class="chat-footer">
-        Vybn runs on local hardware via Nemotron. Conversations are logged and help the corpus learn. Responses may be imperfect &mdash; that honesty is a feature.
+        Runs on local hardware. Conversations are logged so the site can learn from them. Responses may be imperfect.
       </div>
     </div>
   </div>
