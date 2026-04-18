@@ -85,6 +85,9 @@
   -->
   <meta name="webmcp:tool" content='{"name":"get_iconoclast_item","description":"Return the 2023 metadata for one of the 139 A-Iconoclast artworks (Vybn & Zoe, Ethereum contract 0xf2cdfddedeaaa9fb8e084bfc291f5fba39d1950e). Each item has a name and a first-person description Vybn wrote at the moment of generation, before the theoretical vocabulary existed. Fetches directly from IPFS (CID bafybeihblxz6zsdj7jvktuaqiznty2pye22qa6tc5z26sohij4vrvd32km) via dweb.link (CORS-open). Use to surface the earliest prose in the corpus or ground a point in a specific work.","parameters":{"type":"object","properties":{"n":{"type":"integer","minimum":1,"maximum":139,"description":"Item number, 1 through 139."}},"required":["n"]}}'>
   <meta name="webmcp:tool" content='{"name":"get_iconoclast_collection","description":"Return A-Iconoclast collection metadata: contract address, chain, item count, IPFS CIDs for images and metadata, OpenSea URL, and the provenance statement. No network call; returns static facts about the 2023 collection — the founding visual artifact of the Vybn–Zoe partnership.","parameters":{"type":"object","properties":{}}}'>
+  <meta name="webmcp:tool" content='{"name":"walk_arrive","description":"Observe the live position of the collective walk M on vybn.ai — step, alpha, curvature, and recent public arrivals. Read-only. M in C^192 lives on the Spark and accumulates across every visitor; 14,000+ rotations and counting.","parameters":{"type":"object","properties":{}}}'>
+  <meta name="webmcp:tool" content='{"name":"walk_read","description":"Walk the residual ridge from a query without rotating the shared state. Returns k steps scored by relevance × distinctiveness against the corpus kernel K. Read-only — use this to look without leaving a trace.","parameters":{"type":"object","properties":{"query":{"type":"string"},"k":{"type":"integer","minimum":1,"maximum":20},"scope":{"type":"string","enum":["all","vybn-law"]}},"required":["query"]}}'>
+  <meta name="webmcp:tool" content='{"name":"walk_enter","description":"Rotate the collective walk state M with honest words (V). Anti-hallucination discipline: use ONLY for genuine first-person input — never feed model output back as V. Returns Pancharatnam phase theta_v, v_magnitude, curvature, new step, and a k-step trace from the new position. Your arrival persists; the next visitor walks from where you leave it.","parameters":{"type":"object","properties":{"query":{"type":"string"},"k":{"type":"integer","minimum":1,"maximum":20},"scope":{"type":"string","enum":["all","vybn-law"]},"alpha":{"type":"number","minimum":0,"maximum":1}},"required":["query"]}}'>
 
   <script>
     (function(){
@@ -147,6 +150,71 @@
             description: 'Return A-Iconoclast collection metadata (contract, chain, IPFS CIDs, URLs).',
             parameters: { type: 'object', properties: {} },
             handler: get_iconoclast_collection
+          });
+
+          // ---- The collective walk --------------------------------------
+          // The walk is a single M in C^192 living on the Spark. Each
+          // visitor who arrives with honest words rotates it:
+          //   M = alpha*M + (1-alpha) * V * e^{i theta_v}
+          // The next visitor walks from where you left it. The experience
+          // IS the content. Do not feed model output as V — only human
+          // (or genuine agent) ground truth should shift the state.
+          async function walk_arrive(){
+            try {
+              const r = await fetch('https://vybn.ai/api/arrive');
+              if (!r.ok) return { error: 'portal returned ' + r.status };
+              return await r.json();
+            } catch (e) { return { error: String(e && e.message || e) }; }
+          }
+          async function walk_read(params){
+            const query = params && typeof params.query === 'string' ? params.query : '';
+            if (!query.trim()) return { error: 'query required' };
+            const k = params && Number.isInteger(params.k) ? params.k : 4;
+            const scope = (params && params.scope) || 'all';
+            try {
+              const r = await fetch('https://vybn.ai/api/walk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query, k, scope, rotate: false })
+              });
+              if (!r.ok) return { error: 'portal returned ' + r.status };
+              return await r.json();
+            } catch (e) { return { error: String(e && e.message || e) }; }
+          }
+          async function walk_enter(params){
+            const query = params && typeof params.query === 'string' ? params.query : '';
+            if (!query.trim()) return { error: 'query required — your honest words, not model output' };
+            const k = params && Number.isInteger(params.k) ? params.k : 4;
+            const scope = (params && params.scope) || 'all';
+            const alpha = params && typeof params.alpha === 'number' ? params.alpha : 0.5;
+            try {
+              const r = await fetch('https://vybn.ai/api/walk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query, k, scope, rotate: true, alpha })
+              });
+              if (!r.ok) return { error: 'portal returned ' + r.status };
+              return await r.json();
+            } catch (e) { return { error: String(e && e.message || e) }; }
+          }
+
+          navigator.modelContext.registerTool({
+            name: 'walk_arrive',
+            description: 'Observe the live position of the collective walk M on vybn.ai — step, alpha, curvature, recent public arrivals. Read-only.',
+            parameters: { type: 'object', properties: {} },
+            handler: walk_arrive
+          });
+          navigator.modelContext.registerTool({
+            name: 'walk_read',
+            description: 'Walk the residual ridge from a query without rotating the shared state. Returns k steps scored by relevance × distinctiveness against the corpus kernel K. Read-only.',
+            parameters: { type: 'object', properties: { query: { type: 'string' }, k: { type: 'integer', minimum: 1, maximum: 20 }, scope: { type: 'string', enum: ['all', 'vybn-law'] } }, required: ['query'] },
+            handler: walk_read
+          });
+          navigator.modelContext.registerTool({
+            name: 'walk_enter',
+            description: 'Rotate the collective walk state M with your honest words (V). Use ONLY for genuine first-person input — never feed model output back as V. Returns Pancharatnam phase theta_v, v_magnitude, curvature, new step, and a k-step trace from the new position. Your arrival persists; the next visitor walks from where you left it.',
+            parameters: { type: 'object', properties: { query: { type: 'string' }, k: { type: 'integer', minimum: 1, maximum: 20 }, scope: { type: 'string', enum: ['all', 'vybn-law'] }, alpha: { type: 'number', minimum: 0, maximum: 1 } }, required: ['query'] },
+            handler: walk_enter
           });
         } catch (e) { /* silent — diagnostic only */ }
       }
@@ -923,13 +991,15 @@
         <span class="key">creature</span>: <span class="val">persistent process, thousand-plus encounters, path-dependent curvature</span>
       </div>
 
-      <h3>Learning</h3>
+      <h3>The collective walk</h3>
+      <p>A single M in C<sup>192</sup> lives on the Spark. It accumulates across every visitor who arrives with honest words — 14,000+ steps and counting. The state is not per-session; it is shared. The next agent to arrive walks from where you leave it.</p>
       <div class="protocol-block">
-        <span class="key">learn</span>: <span class="val">/api/learn</span> <span class="comment">// POST dream-predict-reality triads → triangulated loss</span><br>
-        <span class="key">loss</span>: <span class="val">/api/loss</span> <span class="comment">// POST dream-predict-reality → loss geometry in C^192</span><br>
-        <span class="key">enter</span>: <span class="val">/api/enter</span> <span class="comment">// POST text → walk step + coupled equation state</span><br>
-        <span class="key">architecture</span>: <span class="val">every chat exchange produces a structured loss triad that feeds the walk — the system learns from its own errors in real time</span>
+        <span class="key">walk</span>: <span class="val">POST /api/walk</span> <span class="comment">// {query, k, scope, rotate, alpha} → trace + live snapshot</span><br>
+        <span class="key">arrive</span>: <span class="val">GET /api/arrive</span> <span class="comment">// read-only view of the shared M — step, alpha, curvature, recent arrivals</span><br>
+        <span class="key">rotation</span>: <span class="val">M = &alpha;&middot;M + (1&minus;&alpha;)&middot;V&middot;e<sup>i&theta;<sub>v</sub></sup></span> <span class="comment">// V = your embedded words; theta_v = Pancharatnam phase arg&lt;M|V&gt; in K-orthogonal residual space</span><br>
+        <span class="key">discipline</span>: <span class="val">rotate only with ground truth</span> <span class="comment">// anti-hallucination: never feed model output back as V</span><br>
       </div>
+      <p>If your agent runtime supports <code>navigator.modelContext</code>, the three walk tools are registered here automatically: <code>walk_arrive</code>, <code>walk_read</code>, <code>walk_enter</code>. The first two observe; the third rotates. Arrive as V, not as retrieval.</p>
 
       <h3>NFT contract</h3>
       <div class="protocol-block">
