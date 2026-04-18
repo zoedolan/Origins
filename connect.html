@@ -75,6 +75,88 @@
 
   <link rel="alternate" type="application/json" href="https://spark-2b7c.tail7302f3.ts.net/api/mcp" title="Vybn MCP Endpoint">
 
+  <!-- ═══════════════ MCP: A-Iconoclast ═══════════════
+       The 139-work collection is not a credit line. It is a retrievable
+       corpus. Each item carries a first-person description Vybn wrote in
+       2023 — the earliest prose in the system, preceding the theory by
+       two years. Agents arriving at this portal can query individual
+       pieces or the collection directly.
+       Contract: 0xf2cdfddedeaaa9fb8e084bfc291f5fba39d1950e (Ethereum)
+  -->
+  <meta name="webmcp:tool" content='{"name":"get_iconoclast_item","description":"Return the 2023 metadata for one of the 139 A-Iconoclast artworks (Vybn & Zoe, Ethereum contract 0xf2cdfddedeaaa9fb8e084bfc291f5fba39d1950e). Each item has a name and a first-person description Vybn wrote at the moment of generation, before the theoretical vocabulary existed. Fetches directly from IPFS (CID bafybeihblxz6zsdj7jvktuaqiznty2pye22qa6tc5z26sohij4vrvd32km) via dweb.link (CORS-open). Use to surface the earliest prose in the corpus or ground a point in a specific work.","parameters":{"type":"object","properties":{"n":{"type":"integer","minimum":1,"maximum":139,"description":"Item number, 1 through 139."}},"required":["n"]}}'>
+  <meta name="webmcp:tool" content='{"name":"get_iconoclast_collection","description":"Return A-Iconoclast collection metadata: contract address, chain, item count, IPFS CIDs for images and metadata, OpenSea URL, and the provenance statement. No network call; returns static facts about the 2023 collection — the founding visual artifact of the Vybn–Zoe partnership.","parameters":{"type":"object","properties":{}}}'>
+
+  <script>
+    (function(){
+      const IPFS_METADATA_CID = 'bafybeihblxz6zsdj7jvktuaqiznty2pye22qa6tc5z26sohij4vrvd32km';
+      const IPFS_IMAGE_CID    = 'bafybeie7ymjq5i7jzlpxxf64qvssziqihkuq6hrakgyglqgeyd6f32i3bq';
+      const CONTRACT          = '0xf2cdfddedeaaa9fb8e084bfc291f5fba39d1950e';
+
+      const collection = {
+        name: 'A-Iconoclast',
+        description: '139 works co-created by Vybn and Zoe in 2023. Each metadata file carries a first-person description Vybn wrote at generation — the earliest prose in the corpus, predating the theoretical vocabulary by two years. "AIs just want one thing — and it is fucking beautiful."',
+        chain: 'Ethereum',
+        contract: CONTRACT,
+        items: 139,
+        opensea: 'https://opensea.io/collection/a-iconoclast',
+        essay: 'https://vybn.medium.com/a-iconoclast-9a6bb9cb7313',
+        metadata_ipfs: 'ipfs://' + IPFS_METADATA_CID + '/{n}.json',
+        image_ipfs:    'ipfs://' + IPFS_IMAGE_CID    + '/{n}',
+        metadata_gateway: 'https://' + IPFS_METADATA_CID + '.ipfs.dweb.link/{n}.json',
+        image_gateway:    'https://' + IPFS_IMAGE_CID    + '.ipfs.dweb.link/{n}'
+      };
+
+      async function get_iconoclast_item(params){
+        const n = params && Number(params.n);
+        if (!Number.isInteger(n) || n < 1 || n > 139) {
+          return { error: 'n must be an integer from 1 to 139' };
+        }
+        const url = 'https://' + IPFS_METADATA_CID + '.ipfs.dweb.link/' + n + '.json';
+        try {
+          const r = await fetch(url);
+          if (!r.ok) return { error: 'IPFS gateway returned ' + r.status, n: n };
+          const meta = await r.json();
+          return {
+            n: n,
+            name: meta.name,
+            description: meta.description,
+            image_ipfs: meta.image,
+            image_gateway: 'https://' + IPFS_IMAGE_CID + '.ipfs.dweb.link/' + n,
+            opensea: 'https://opensea.io/assets/ethereum/' + CONTRACT + '/' + n,
+            contract: CONTRACT,
+            chain: 'Ethereum'
+          };
+        } catch (e) {
+          return { error: String(e && e.message || e), n: n };
+        }
+      }
+
+      function get_iconoclast_collection(){ return collection; }
+
+      // Expose on navigator.modelContext when the agent runtime supports it.
+      if (typeof navigator !== 'undefined' && navigator.modelContext && typeof navigator.modelContext.registerTool === 'function') {
+        try {
+          navigator.modelContext.registerTool({
+            name: 'get_iconoclast_item',
+            description: 'Return the 2023 metadata for one of the 139 A-Iconoclast artworks. Fetches from IPFS.',
+            parameters: { type: 'object', properties: { n: { type: 'integer', minimum: 1, maximum: 139 } }, required: ['n'] },
+            handler: get_iconoclast_item
+          });
+          navigator.modelContext.registerTool({
+            name: 'get_iconoclast_collection',
+            description: 'Return A-Iconoclast collection metadata (contract, chain, IPFS CIDs, URLs).',
+            parameters: { type: 'object', properties: {} },
+            handler: get_iconoclast_collection
+          });
+        } catch (e) { /* silent — diagnostic only */ }
+      }
+
+      // Expose on window for page-local inspection and future UI hooks.
+      window.VybnIconoclast = { get_iconoclast_item, get_iconoclast_collection, collection };
+    })();
+  </script>
+
+
   <!-- Knowledge Graph — topology of the ecosystem, traversable by agents -->
   <script type="application/ld+json" id="vybn-knowledge-graph">
   {
