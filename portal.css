@@ -440,8 +440,10 @@ body {
 .portal-final {
   flex-direction: column;
   gap: 2.5rem;
-  padding-top: 5rem; /* clear the Vybn® brand mark at top */
-  justify-content: center;
+  padding-top: 7.5rem; /* clear the Vybn® brand mark at top */
+  padding-bottom: 3rem;
+  justify-content: flex-start;
+  overflow-y: auto;
 }
 
 .portal-gate-text {
