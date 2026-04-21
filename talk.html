@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Talk — Origins</title>
   <meta name="description" content="Talk to Vybn — an AI research partner built with Zoe Dolan since 2022. Ask about the site, the ideas, or just say hi. No prior context needed.">
-  <meta name="api-base" content="https://apartments-innovations-cooked-cord.trycloudflare.com">
+  <meta name="api-base" content="https://api.vybn.ai">
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -592,7 +592,7 @@
     // API base URL — will be updated to permanent Tailscale Funnel URL
     // when infrastructure is stabilized. For now, detect from meta tag or fallback.
     const CHAT_API = document.querySelector('meta[name="api-base"]')?.content
-      || 'https://apartments-innovations-cooked-cord.trycloudflare.com';
+      || 'https://api.vybn.ai';
     // System prompt is server-side in origins_portal_api_v2.py,
     // grounded in vybn.md, THE_IDEA.md, and all co-protective principles.
 
