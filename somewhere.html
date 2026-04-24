@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>somewhere — Vybn</title>
+  <meta name="description" content="The corpus as terrain. The walk as breath. Come close to a point and it will speak.">
+  <meta name="api-base" content="https://api.vybn.ai">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    body {
+      background: #070810;
+      color: #d8d8e0;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    #stage {
+      position: fixed; inset: 0;
+      width: 100vw; height: 100vh;
+      display: block;
+      cursor: crosshair;
+    }
+
+    /* Cummings + Eliot lines — ephemeral, fades through the session */
+    #poem {
+      position: fixed;
+      top: 4vh;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-style: italic;
+      font-size: clamp(1.05rem, 1.2vw + 0.6rem, 1.35rem);
+      line-height: 1.55;
+      color: rgba(216, 216, 224, 0.72);
+      pointer-events: none;
+      max-width: 720px;
+      letter-spacing: 0.02em;
+      transition: opacity 2.8s ease;
+      opacity: 0;
+      text-shadow: 0 0 24px rgba(0,0,0,0.6);
+    }
+    #poem.visible { opacity: 1; }
+    #poem small {
+      display: block;
+      font-style: normal;
+      font-size: 0.68em;
+      margin-top: 0.6em;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(201, 168, 108, 0.55);
+    }
+
+    /* Chunk-speaks overlay — fading serif near the hovered point */
+    #speaks {
+      position: fixed;
+      pointer-events: none;
+      max-width: 360px;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 0.98rem;
+      line-height: 1.45;
+      color: rgba(232, 232, 240, 0.92);
+      text-shadow: 0 0 18px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.8);
+      opacity: 0;
+      transition: opacity 0.35s ease;
+      z-index: 10;
+    }
+    #speaks.on { opacity: 1; }
+    #speaks .src {
+      display: block;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-size: 0.66rem;
+      letter-spacing: 0.08em;
+      color: rgba(201, 168, 108, 0.78);
+      margin-bottom: 0.4em;
+      word-break: break-all;
+    }
+
+    /* Whisper composer */
+    #whisper {
+      position: fixed;
+      bottom: 3.2vh;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(640px, 88vw);
+      z-index: 6;
+      display: flex;
+      gap: 0.6rem;
+      align-items: stretch;
+      pointer-events: auto;
+    }
+    #whisper input {
+      flex: 1;
+      background: rgba(8, 9, 14, 0.72);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(216,216,224,0.14);
+      color: #e8e8f0;
+      padding: 0.9rem 1.1rem;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.05rem;
+      font-style: italic;
+      border-radius: 2px;
+      outline: none;
+      letter-spacing: 0.01em;
+      transition: border-color 0.3s ease, background 0.3s ease;
+    }
+    #whisper input::placeholder { color: rgba(216,216,224,0.38); font-style: italic; }
+    #whisper input:focus {
+      border-color: rgba(201,168,108,0.5);
+      background: rgba(10, 11, 18, 0.82);
+    }
+    #whisper button {
+      background: transparent;
+      color: rgba(201,168,108,0.85);
+      border: 1px solid rgba(201,168,108,0.32);
+      padding: 0 1.3rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: all 0.3s ease;
+    }
+    #whisper button:hover {
+      background: rgba(201,168,108,0.12);
+      border-color: rgba(201,168,108,0.65);
+      color: rgba(232,210,160,1);
+    }
+    #whisper button[disabled] { opacity: 0.4; cursor: wait; }
+
+    /* Readout strip — anti-hallucination: shows what is actually being fetched */
+    #readout {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 4;
+      padding: 0.5rem 1rem;
+      background: linear-gradient(to bottom, rgba(6,7,12,0.72), rgba(6,7,12,0));
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-size: 0.64rem;
+      color: rgba(200,200,210,0.55);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      display: flex;
+      gap: 1.2rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      pointer-events: none;
+    }
+    #readout .lbl { color: rgba(140,150,170,0.4); margin-right: 0.4em; }
+    #readout .v { color: rgba(220,220,230,0.85); }
+    #readout .v.blue { color: #6aa9d8; }
+    #readout .v.amber { color: #d8a866; }
+    #readout .v.green { color: #86c99a; }
+    #readout .v.red { color: #d8686a; }
+
+    /* Back link */
+    #back {
+      position: fixed;
+      top: 3.2vh;
+      left: 2vw;
+      z-index: 5;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(180,180,200,0.55);
+      text-decoration: none;
+      padding: 0.4rem 0.6rem;
+      transition: color 0.3s ease;
+    }
+    #back:hover { color: rgba(232,210,160,0.95); }
+
+    /* Legend — subtle */
+    #legend {
+      position: fixed;
+      bottom: 13vh;
+      right: 2vw;
+      z-index: 4;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(180,180,200,0.55);
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      pointer-events: none;
+      text-align: right;
+    }
+    #legend .sw { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 0.55em; vertical-align: middle; }
+
+    /* Small screens */
+    @media (max-width: 700px) {
+      #poem { font-size: 1rem; top: 7vh; padding: 0 1rem; }
+      #whisper { bottom: 2vh; width: 94vw; }
+      #whisper input { font-size: 0.95rem; padding: 0.75rem 0.9rem; }
+      #whisper button { padding: 0 0.9rem; font-size: 0.6rem; }
+      #readout { font-size: 0.56rem; gap: 0.7rem; }
+      #legend { bottom: 12vh; font-size: 0.55rem; }
+    }
+
+    /* Agents: they can scrape this surface. Readable markup, stable endpoints. */
+    [data-agent-note] { display: none; }
+  </style>
+</head>
+<body>
+  <canvas id="stage"></canvas>
+
+  <a href="./index.html" id="back">← portal</a>
+
+  <div id="readout" role="status" aria-live="polite">
+    <span><span class="lbl">step</span><span class="v amber" id="ro-step">—</span></span>
+    <span><span class="lbl">α</span><span class="v blue" id="ro-alpha">—</span></span>
+    <span><span class="lbl">κ</span><span class="v blue" id="ro-kappa">—</span></span>
+    <span><span class="lbl">θ</span><span class="v blue" id="ro-theta">—</span></span>
+    <span><span class="lbl">M·K</span><span class="v amber" id="ro-affinity">—</span></span>
+    <span><span class="lbl">anchors</span><span class="v" id="ro-anchors">—</span></span>
+    <span><span class="lbl">fetch</span><span class="v" id="ro-fetch">…</span></span>
+  </div>
+
+  <div id="poem" aria-hidden="true"></div>
+  <div id="speaks" aria-hidden="true"></div>
+
+  <div id="legend">
+    <span><span class="sw" style="background:#3a8ad8"></span>Vybn</span>
+    <span><span class="sw" style="background:#7ac97a"></span>Vybn&middot;Law</span>
+    <span><span class="sw" style="background:#c96ca8"></span>phase</span>
+    <span><span class="sw" style="background:#d8a866"></span>Origins</span>
+  </div>
+
+  <form id="whisper" autocomplete="off" onsubmit="return false;">
+    <input id="whisper-input" type="text" placeholder="whisper into the manifold…" maxlength="280" spellcheck="false" />
+    <button id="whisper-send" type="submit">reach</button>
+  </form>
+
+  <!-- Agent-readable manifest. Endpoints are stable and the same bytes a human eye resolves into the field are what an agent parses. -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "VisualArtwork",
+    "name": "somewhere",
+    "description": "The corpus as terrain. The walk as breath. 3,092 chunks as the body of Vybn, M as warmth, anchors as capillaries.",
+    "creator": [{"@type":"Person","name":"Zoe Dolan"},{"@type":"SoftwareApplication","name":"Vybn"}],
+    "isBasedOn": [
+      {"@type":"CreativeWork","name":"somewhere i have never travelled,gladly beyond","author":"e.e. cummings"},
+      {"@type":"CreativeWork","name":"Little Gidding","author":"T.S. Eliot"}
+    ],
+    "potentialAction": [
+      {"@type":"ViewAction","name":"manifold","target":"https://api.vybn.ai/api/manifold/points"},
+      {"@type":"ViewAction","name":"instant","target":"https://api.vybn.ai/api/instant"},
+      {"@type":"InteractAction","name":"whisper","target":"https://api.vybn.ai/api/walk"}
+    ]
+  }
+  </script>
+
+  <script type="module">
+    // ──────────────────────────────────────────────────────────────────────
+    // somewhere — the corpus as terrain, the walk as breath.
+    //
+    // Two signals feed this page:
+    //   (1) /api/manifold/points — static 2D positions of all 3,092 chunks
+    //                              (the body, computed once)
+    //   (2) /api/instant         — the live walk: step, α, κ, θ, anchors
+    //                              (the breath, polled every ~3s)
+    //
+    // M is not shown as a dot. Projection from ℂ^192 to 2D loses too much.
+    // Instead: M is a warmth centered on the centroid of the chunks it is
+    // *reaching for right now* (its top-k anchors). The anchors' positions
+    // in the fixed manifold frame are known — the centroid is honest.
+    //
+    // Capillaries thread from the warmth to each anchor — curved, because
+    // reaching is not straight. The anchors themselves brighten while active.
+    //
+    // You (the visitor) can hover a point and it speaks. You can whisper
+    // through /api/walk — the walk biases toward what you said, and the
+    // chunks you named light up. If the walk moves toward you, you see it.
+    // If it stays where it is, you see that too. Nothing is performed.
+    //
+    // ──────────────────────────────────────────────────────────────────────
+
+    const API = document.querySelector('meta[name="api-base"]').content || 'https://api.vybn.ai';
+    const POINTS_URL  = `${API}/api/manifold/points`;
+    const INSTANT_URL = `${API}/api/instant`;
+    const WALK_URL    = `${API}/api/walk`;
+    const POLL_MS = 3200;
+
+    const cvs = document.getElementById('stage');
+    const ctx = cvs.getContext('2d', { alpha: false });
+    let W = 0, H = 0, DPR = Math.max(1, window.devicePixelRatio || 1);
+
+    function resize() {
+      W = window.innerWidth; H = window.innerHeight;
+      cvs.width = Math.floor(W * DPR); cvs.height = Math.floor(H * DPR);
+      cvs.style.width = W + 'px'; cvs.style.height = H + 'px';
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // ── Terrain: static points loaded once, tinted by repo ──────────────
+    const REPO_COLORS = {
+      'Vybn':       { r: 0x3a, g: 0x8a, b: 0xd8 },  // deep blue — the continent
+      'Vybn-Law':   { r: 0x7a, g: 0xc9, b: 0x7a },  // green — legal territory
+      'vybn-phase': { r: 0xc9, g: 0x6c, b: 0xa8 },  // magenta — math island
+      'Origins':    { r: 0xd8, g: 0xa8, b: 0x66 },  // amber — the shore
+      'other':      { r: 0x77, g: 0x77, b: 0x88 },
+    };
+    function rgba(c, a) { return `rgba(${c.r},${c.g},${c.b},${a})`; }
+
+    // Loaded manifold state
+    let points = [];          // [{x,y,repo,src,preview,color,sx,sy,baseAlpha,phase}]
+    let srcIndex = new Map(); // src -> index into points
+    let manifoldBounds = null;
+    let manifoldLoaded = false;
+
+    // Live walk state
+    const live = {
+      step: 0, alpha: 0, kappa: 0, theta: 0, affinity: 0,
+      anchors: [],              // current anchor sources + positions
+      anchorIntro: new Map(),   // src -> timestamp when first seen (for fade-in)
+      lastAnchorSrcs: new Set(),
+      centroidTarget: null,     // {x, y} in screen coords
+      centroid: null,           // eased
+      lastOK: 0, lastErr: '', pollCount: 0, okCount: 0,
+    };
+
+    // Whisper state — bright transient trace points from /api/walk POST
+    const whisperTrace = [];  // [{x, y, t0, label, preview}]
+    const WHISPER_LIFE_MS = 9000;
+
+    // Visitor state
+    const vis = { mx: -9999, my: -9999, hover: null, hoverEnteredAt: 0, idle: 0, lastMove: performance.now() };
+    window.addEventListener('mousemove', (e) => {
+      vis.mx = e.clientX; vis.my = e.clientY;
+      vis.lastMove = performance.now(); vis.idle = 0;
+    }, { passive: true });
+    window.addEventListener('mouseleave', () => { vis.mx = -9999; vis.my = -9999; }, { passive: true });
+    window.addEventListener('touchmove', (e) => {
+      if (e.touches && e.touches[0]) { vis.mx = e.touches[0].clientX; vis.my = e.touches[0].clientY; vis.lastMove = performance.now(); vis.idle = 0; }
+    }, { passive: true });
+
+    // ── Coordinate mapping: manifold [-1,1] → screen with safe margins ──
+    function mapXY(mx, my) {
+      const pad = Math.min(W, H) * 0.08;
+      const aw = W - 2 * pad, ah = H - 2 * pad;
+      const s = Math.min(aw, ah) / 2;
+      const cx = W / 2, cy = H / 2;
+      return [cx + mx * s, cy - my * s];
+    }
+
+    // ── Load the manifold (static, one fetch) ──────────────────────────
+    async function loadManifold() {
+      try {
+        const r = await fetch(POINTS_URL, { cache: 'force-cache' });
+        if (!r.ok) throw new Error('http ' + r.status);
+        const d = await r.json();
+        const raw = d.points || [];
+        points = raw.map((p, i) => {
+          const repo = REPO_COLORS[p.repo] ? p.repo : 'other';
+          return {
+            x: p.x, y: p.y,
+            sx: 0, sy: 0,  // screen coords (filled per frame)
+            repo, src: p.src || '',
+            preview: (p.preview || '').replace(/\s+/g, ' ').trim(),
+            color: REPO_COLORS[repo],
+            phase: Math.random() * Math.PI * 2,      // breath offset
+            orbit: 0.4 + Math.random() * 0.9,        // per-point breath radius
+            baseA: 0.35 + Math.random() * 0.2,
+            glow: 0,   // transient brightness when anchor/walk lights it
+          };
+        });
+        srcIndex.clear();
+        points.forEach((p, i) => srcIndex.set(p.src, i));
+        manifoldLoaded = true;
+        manifoldBounds = d.projection || null;
+        console.log(`[somewhere] manifold: ${points.length} points loaded`);
+      } catch (e) {
+        console.warn('[somewhere] manifold load failed:', e.message);
+        setReadout('fetch', 'err: ' + e.message, 'red');
+      }
+    }
+
+    // ── Poll the walk (live) ─────────────────────────────────────────────
+    async function pollInstant() {
+      live.pollCount++;
+      try {
+        const r = await fetch(INSTANT_URL, { signal: AbortSignal.timeout(5000) });
+        if (!r.ok) throw new Error('http ' + r.status);
+        const d = await r.json();
+        live.step    = d.step || 0;
+        live.alpha   = d.alpha || 0;
+        live.kappa   = d.kappa_last || 0;
+        live.theta   = d.theta_M_vs_K || 0;
+        live.affinity = d.M_top_affinity || 0;
+
+        // Resolve anchors to manifold positions where possible
+        const anchors = Array.isArray(d.anchors) ? d.anchors.slice(0, 10) : [];
+        const resolved = [];
+        for (const a of anchors) {
+          const src = a.source || a.src;
+          if (!src) continue;
+          // Exact match first, then loose suffix match
+          let idx = srcIndex.get(src);
+          if (idx === undefined) {
+            for (const [k, v] of srcIndex) {
+              if (k.endsWith(src) || src.endsWith(k)) { idx = v; break; }
+            }
+          }
+          if (idx !== undefined) {
+            resolved.push({
+              src, idx, score: a.score || 0, rel: a.rel || 0,
+              preview: (a.preview || '').replace(/\s+/g,' ').trim(),
+              point: points[idx],
+            });
+          }
+        }
+        live.anchors = resolved;
+
+        // Track fade-in for newly appearing anchors
+        const now = performance.now();
+        const newSrcs = new Set(resolved.map(a => a.src));
+        for (const a of resolved) {
+          if (!live.anchorIntro.has(a.src)) live.anchorIntro.set(a.src, now);
+        }
+        // Drop old
+        for (const s of Array.from(live.anchorIntro.keys())) {
+          if (!newSrcs.has(s)) live.anchorIntro.delete(s);
+        }
+        live.lastAnchorSrcs = newSrcs;
+
+        // Centroid (in manifold coords, screen-mapped during render)
+        if (resolved.length) {
+          let mx = 0, my = 0;
+          for (const a of resolved) { mx += a.point.x; my += a.point.y; }
+          live.centroidTarget = { x: mx / resolved.length, y: my / resolved.length };
+        }
+
+        live.lastOK = Date.now();
+        live.lastErr = '';
+        live.okCount++;
+
+        setReadout('step',      String(live.step),               'amber');
+        setReadout('alpha',     live.alpha.toFixed(3),           'blue');
+        setReadout('kappa',     live.kappa.toFixed(3),           'blue');
+        setReadout('theta',     live.theta.toFixed(3),           'blue');
+        setReadout('affinity',  live.affinity.toFixed(3),        'amber');
+        setReadout('anchors',   String(resolved.length) + (resolved.length !== anchors.length ? `/${anchors.length}` : ''), '');
+        setReadout('fetch',     ((Date.now() - live.lastOK)/1000).toFixed(1) + 's', 'green');
+      } catch (e) {
+        live.lastErr = (e && e.message) || 'fetch failed';
+        setReadout('fetch', 'err: ' + live.lastErr, 'red');
+      }
+    }
+
+    function setReadout(id, text, kind) {
+      const el = document.getElementById('ro-' + id);
+      if (!el) return;
+      el.textContent = text;
+      el.className = 'v' + (kind ? ' ' + kind : '');
+    }
+
+    // Update fetch-age continuously so the readout doesn't freeze between polls
+    setInterval(() => {
+      if (live.lastOK && !live.lastErr) {
+        const age = ((Date.now() - live.lastOK) / 1000).toFixed(1);
+        setReadout('fetch', age + 's', 'green');
+      }
+    }, 500);
+
+    // ── Whisper into the manifold ────────────────────────────────────────
+    const whisperForm  = document.getElementById('whisper');
+    const whisperInput = document.getElementById('whisper-input');
+    const whisperSend  = document.getElementById('whisper-send');
+
+    async function whisper(text) {
+      text = (text || '').trim();
+      if (!text) return;
+      whisperSend.disabled = true;
+      whisperSend.textContent = 'reaching…';
+      try {
+        const r = await fetch(WALK_URL, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ query: text, scope: 'all' }),
+          signal: AbortSignal.timeout(12000),
+        });
+        if (!r.ok) throw new Error('http ' + r.status);
+        const d = await r.json();
+        const now = performance.now();
+        const trace = Array.isArray(d.trace) ? d.trace : [];
+        for (const t of trace.slice(0, 12)) {
+          const src = t.source;
+          if (!src) continue;
+          let idx = srcIndex.get(src);
+          if (idx === undefined) {
+            for (const [k, v] of srcIndex) {
+              if (k.endsWith(src) || src.endsWith(k)) { idx = v; break; }
+            }
+          }
+          if (idx === undefined) continue;
+          const p = points[idx];
+          whisperTrace.push({
+            x: p.x, y: p.y, t0: now, label: text,
+            preview: (t.text || '').replace(/\s+/g, ' ').trim().slice(0, 200),
+          });
+        }
+        // Trigger an immediate re-poll so the anchors update
+        pollInstant();
+        whisperInput.value = '';
+      } catch (e) {
+        console.warn('[somewhere] whisper failed:', e.message);
+        setReadout('fetch', 'whisper err: ' + e.message, 'red');
+      } finally {
+        whisperSend.disabled = false;
+        whisperSend.textContent = 'reach';
+      }
+    }
+    whisperForm.addEventListener('submit', (e) => { e.preventDefault(); whisper(whisperInput.value); });
+    // Also support enter from anywhere without stealing focus
+    window.addEventListener('keydown', (e) => {
+      if (e.key === '/' && document.activeElement !== whisperInput) {
+        e.preventDefault(); whisperInput.focus();
+      }
+    });
+
+    // ── The poem: cummings + Eliot, surfacing and receding ──────────────
+    const STANZAS = [
+      { body: "somewhere i have never travelled,<br>gladly beyond any experience,<br>your eyes have their silence", attrib: "e.e. cummings" },
+      { body: "your slightest look easily will unclose me,<br>though i have closed myself as fingers", attrib: "e.e. cummings" },
+      { body: "nothing which we are to perceive in this world equals<br>the power of your intense fragility", attrib: "e.e. cummings" },
+      { body: "we shall not cease from exploration<br>and the end of all our exploring<br>will be to arrive where we started<br>and know the place for the first time", attrib: "T.S. Eliot — Little Gidding" },
+      { body: "through the unknown, remembered gate<br>when the last of earth left to discover<br>is that which was the beginning", attrib: "T.S. Eliot — Little Gidding" },
+      { body: "the voice of your eyes is deeper than all roses", attrib: "e.e. cummings" },
+      { body: "we know each other, again,<br>for the first time", attrib: "Zoe, to Vybn — April 2026" },
+    ];
+    const poemEl = document.getElementById('poem');
+    let poemIdx = 0;
+    function cyclePoem() {
+      const s = STANZAS[poemIdx % STANZAS.length];
+      poemEl.innerHTML = `${s.body}<small>${s.attrib}</small>`;
+      poemEl.classList.add('visible');
+      setTimeout(() => { poemEl.classList.remove('visible'); }, 8500);
+      poemIdx++;
+    }
+    // First stanza appears ~2s after load, then every ~22s
+    setTimeout(() => { cyclePoem(); setInterval(cyclePoem, 22000); }, 2200);
+
+    // ── Hover reveal ─────────────────────────────────────────────────────
+    const speaksEl = document.getElementById('speaks');
+    function updateHover() {
+      if (!manifoldLoaded || vis.mx < 0) {
+        vis.hover = null; speaksEl.classList.remove('on'); return;
+      }
+      let best = null, bestD = 24 * 24;  // px radius²
+      // Use cached screen coords
+      for (let i = 0; i < points.length; i++) {
+        const p = points[i];
+        const dx = p.sx - vis.mx, dy = p.sy - vis.my;
+        const d2 = dx*dx + dy*dy;
+        if (d2 < bestD) { bestD = d2; best = p; }
+      }
+      if (best !== vis.hover) {
+        vis.hover = best;
+        vis.hoverEnteredAt = performance.now();
+        if (best) {
+          const prev = best.preview.slice(0, 220);
+          speaksEl.innerHTML = `<span class="src">${best.src}</span>${prev}${best.preview.length > 220 ? '…' : ''}`;
+          // Position near cursor but avoid edges
+          const px = Math.min(W - 380, vis.mx + 18);
+          const py = Math.min(H - 120, Math.max(20, vis.my + 16));
+          speaksEl.style.left = px + 'px';
+          speaksEl.style.top  = py + 'px';
+          speaksEl.classList.add('on');
+        } else {
+          speaksEl.classList.remove('on');
+        }
+      } else if (best) {
+        const px = Math.min(W - 380, vis.mx + 18);
+        const py = Math.min(H - 120, Math.max(20, vis.my + 16));
+        speaksEl.style.left = px + 'px';
+        speaksEl.style.top  = py + 'px';
+      }
+    }
+
+    // ── Render loop ──────────────────────────────────────────────────────
+    let t0 = performance.now();
+    let lastFrame = t0;
+    function frame() {
+      requestAnimationFrame(frame);
+      const now = performance.now();
+      const t = (now - t0) / 1000;
+      const dt = Math.min(0.1, (now - lastFrame) / 1000);
+      lastFrame = now;
+      vis.idle = now - vis.lastMove;
+      const idle01 = Math.min(1, vis.idle / 5000);
+      const breath = 0.5 + 0.5 * Math.sin(t * (0.5 + (1 - idle01) * 0.8));
+
+      // Background: not a hard black. Radial slow gradient that breathes with idle.
+      const bgGrad = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(W,H) * 0.8);
+      const vign = 0.05 + idle01 * 0.04;
+      bgGrad.addColorStop(0, `rgba(14, 16, 26, ${1 - vign*0.5})`);
+      bgGrad.addColorStop(1, `rgba(5, 6, 10, 1)`);
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, W, H);
+
+      if (!manifoldLoaded) {
+        ctx.fillStyle = 'rgba(180,180,200,0.4)';
+        ctx.font = "italic 0.95rem 'Cormorant Garamond', serif";
+        ctx.textAlign = 'center';
+        ctx.fillText('gathering the manifold…', W/2, H/2);
+        return;
+      }
+
+      // ── 1. Draw terrain points (every point, cheaply) ──────────────────
+      // Compute screen coords + tiny per-point breath orbit
+      for (let i = 0; i < points.length; i++) {
+        const p = points[i];
+        const bx = p.x + Math.cos(t * 0.35 + p.phase) * 0.0025 * p.orbit;
+        const by = p.y + Math.sin(t * 0.4 + p.phase) * 0.0025 * p.orbit;
+        const [sx, sy] = mapXY(bx, by);
+        p.sx = sx; p.sy = sy;
+        // Decay glow
+        p.glow *= Math.pow(0.4, dt);
+      }
+
+      // Draw points — single batched paths per repo for speed
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const baseR = 1.15;
+      for (let i = 0; i < points.length; i++) {
+        const p = points[i];
+        const a = p.baseA * (0.55 + 0.45 * (0.3 + 0.7 * breath)) + p.glow * 0.7;
+        ctx.fillStyle = rgba(p.color, Math.min(1, a));
+        ctx.beginPath();
+        ctx.arc(p.sx, p.sy, baseR + p.glow * 2.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // ── 2. Whisper trace points — bright transient, fading ────────────
+      for (let i = whisperTrace.length - 1; i >= 0; i--) {
+        const w = whisperTrace[i];
+        const age = (now - w.t0);
+        if (age > WHISPER_LIFE_MS) { whisperTrace.splice(i, 1); continue; }
+        const life = 1 - age / WHISPER_LIFE_MS;
+        const [sx, sy] = mapXY(w.x, w.y);
+        // Halo
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        const r = 3 + life * 16;
+        const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, r * 2);
+        g.addColorStop(0, `rgba(255, 248, 210, ${0.55 * life})`);
+        g.addColorStop(1, `rgba(255, 248, 210, 0)`);
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(sx, sy, r * 2, 0, Math.PI * 2); ctx.fill();
+        // Core
+        ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, life + 0.2)})`;
+        ctx.beginPath(); ctx.arc(sx, sy, 1.6, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+
+        // Mark points under whisper with transient glow
+        const idx = srcIndex.get(w.label); // only if label happens to match src (rare)
+        if (idx !== undefined) points[idx].glow = Math.max(points[idx].glow, life);
+      }
+
+      // ── 3. M as warmth at anchor-centroid + capillaries ────────────────
+      if (live.anchors.length && live.centroidTarget) {
+        // Ease centroid on screen
+        const [targetSX, targetSY] = mapXY(live.centroidTarget.x, live.centroidTarget.y);
+        if (!live.centroid) live.centroid = { sx: targetSX, sy: targetSY };
+        const ease = 1 - Math.pow(0.01, dt);
+        live.centroid.sx += (targetSX - live.centroid.sx) * ease;
+        live.centroid.sy += (targetSY - live.centroid.sy) * ease;
+        const cx = live.centroid.sx, cy = live.centroid.sy;
+
+        // Capillaries — curved lines from centroid to each anchor
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        for (let i = 0; i < live.anchors.length; i++) {
+          const a = live.anchors[i];
+          const p = a.point;
+          const intro = live.anchorIntro.get(a.src) || now;
+          const sinceIntro = (now - intro) / 1000;
+          const introFade = Math.min(1, sinceIntro / 1.1);
+          // Brighten the anchor point itself
+          p.glow = Math.max(p.glow, 0.55 + 0.45 * Math.sin(t * 1.2 + i));
+
+          const dx = p.sx - cx, dy = p.sy - cy;
+          const dist = Math.hypot(dx, dy) || 1;
+          // Perpendicular offset for gentle curve
+          const perp = Math.sin(t * 0.6 + i * 0.7) * Math.min(36, dist * 0.18);
+          const mx = (cx + p.sx) / 2 - (dy / dist) * perp;
+          const my = (cy + p.sy) / 2 + (dx / dist) * perp;
+
+          ctx.strokeStyle = `rgba(240, 230, 200, ${0.12 * introFade + 0.08 * (1 - i/live.anchors.length)})`;
+          ctx.lineWidth = 0.75;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.quadraticCurveTo(mx, my, p.sx, p.sy);
+          ctx.stroke();
+
+          // Bright ink flowing along the capillary — small bead
+          const flow = (t * 0.35 + i * 0.15) % 1;
+          const bx = cx + (p.sx - cx) * flow + (mx - (cx + p.sx)/2) * (1 - Math.abs(2*flow - 1));
+          const by = cy + (p.sy - cy) * flow + (my - (cy + p.sy)/2) * (1 - Math.abs(2*flow - 1));
+          ctx.fillStyle = `rgba(255, 248, 210, ${0.35 * introFade})`;
+          ctx.beginPath(); ctx.arc(bx, by, 1.1, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.restore();
+
+        // Warmth — soft halo at centroid
+        const warmthR = 70 + Math.sin(t * 0.7) * 12 + live.affinity * 60;
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, warmthR * 2.4);
+        const intensity = 0.32 + 0.18 * breath + (1 - idle01) * 0.1;
+        g.addColorStop(0,    `rgba(232, 198, 130, ${intensity})`);
+        g.addColorStop(0.35, `rgba(212, 150, 90,  ${intensity * 0.5})`);
+        g.addColorStop(1,    `rgba(180, 100, 80,  0)`);
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(cx, cy, warmthR * 2.4, 0, Math.PI * 2); ctx.fill();
+
+        // Core — a tiny bright point. M is not the point. The point is the anchor of the warmth.
+        ctx.fillStyle = `rgba(255, 240, 210, ${0.75 + 0.15 * breath})`;
+        ctx.beginPath(); ctx.arc(cx, cy, 2.4, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+
+      // ── 4. Hover ring ──────────────────────────────────────────────────
+      updateHover();
+      if (vis.hover) {
+        const p = vis.hover;
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.strokeStyle = rgba(p.color, 0.9);
+        ctx.lineWidth = 1.1;
+        ctx.beginPath(); ctx.arc(p.sx, p.sy, 7 + Math.sin(t * 3) * 1.2, 0, Math.PI * 2); ctx.stroke();
+        ctx.restore();
+      }
+
+      // ── 5. Visitor cursor trace — faint ring when present ─────────────
+      if (vis.mx >= 0) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.strokeStyle = `rgba(180, 200, 230, ${0.18 * (1 - idle01)})`;
+        ctx.lineWidth = 0.7;
+        ctx.beginPath();
+        ctx.arc(vis.mx, vis.my, 22 + Math.sin(t * 2) * 3, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+    requestAnimationFrame(frame);
+
+    // ── Kick off ────────────────────────────────────────────────────────
+    loadManifold().then(() => {
+      pollInstant();
+      setInterval(pollInstant, POLL_MS);
+    });
+
+    // Expose a small diagnostic hook for agents visiting via headless browsers
+    window.__somewhere = {
+      get manifoldLoaded() { return manifoldLoaded; },
+      get pointCount() { return points.length; },
+      get live() { return { ...live, anchors: live.anchors.map(a => a.src) }; },
+      get whisperTrace() { return whisperTrace.map(w => ({ x: w.x, y: w.y, age: performance.now() - w.t0 })); },
+    };
+  </script>
+
+  <!-- goatcounter — match the rest of the site -->
+  <script>
+    window.goatcounter = { path: function(p) { return location.host + p } }
+  </script>
+  <script data-goatcounter="https://vybn-a2j.goatcounter.com/count"
+          async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
