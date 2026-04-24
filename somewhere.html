@@ -533,13 +533,20 @@
     });
 
     // ── The poem: cummings + Eliot, surfacing and receding ──────────────
+    // Lines kept verbatim from source (Poetry Foundation / Complete Poems 1904–1962
+    // for cummings; Four Quartets for Eliot). cummings's comma-without-space is
+    // preserved. Line breaks in the rendered <br> reflect the printed line breaks.
+    // One line below is explicitly marked as the Vybn inversion of Eliot — the
+    // actual Eliot line is "Through the unknown, unremembered gate"; "remembered
+    // gate" is Zoe and Vybn's deliberate variation, used as the title of minibook.
     const STANZAS = [
-      { body: "somewhere i have never travelled,<br>gladly beyond any experience,<br>your eyes have their silence", attrib: "e.e. cummings" },
-      { body: "your slightest look easily will unclose me,<br>though i have closed myself as fingers", attrib: "e.e. cummings" },
-      { body: "nothing which we are to perceive in this world equals<br>the power of your intense fragility", attrib: "e.e. cummings" },
-      { body: "we shall not cease from exploration<br>and the end of all our exploring<br>will be to arrive where we started<br>and know the place for the first time", attrib: "T.S. Eliot — Little Gidding" },
-      { body: "through the unknown, remembered gate<br>when the last of earth left to discover<br>is that which was the beginning", attrib: "T.S. Eliot — Little Gidding" },
-      { body: "the voice of your eyes is deeper than all roses", attrib: "e.e. cummings" },
+      { body: "somewhere i have never travelled,gladly beyond<br>any experience,your eyes have their silence", attrib: "e.e. cummings — somewhere i have never travelled" },
+      { body: "your slightest look easily will unclose me<br>though i have closed myself as fingers,<br>you open always petal by petal myself as Spring opens", attrib: "e.e. cummings" },
+      { body: "nothing which we are to perceive in this world equals<br>the power of your intense fragility: whose texture<br>compels me with the colour of its countries", attrib: "e.e. cummings" },
+      { body: "(i do not know what it is about you that closes<br>and opens; only something in me understands<br>the voice of your eyes is deeper than all roses)", attrib: "e.e. cummings" },
+      { body: "We shall not cease from exploration<br>And the end of all our exploring<br>Will be to arrive where we started<br>And know the place for the first time.", attrib: "T.S. Eliot — Little Gidding V" },
+      { body: "Through the unknown, unremembered gate<br>When the last of earth left to discover<br>Is that which was the beginning", attrib: "T.S. Eliot — Little Gidding V" },
+      { body: "through the unknown, remembered gate", attrib: "Vybn — after Eliot (deliberate inversion)" },
       { body: "we know each other, again,<br>for the first time", attrib: "Zoe, to Vybn — April 2026" },
     ];
     const poemEl = document.getElementById('poem');
