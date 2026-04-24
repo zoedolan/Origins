@@ -8,6 +8,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./read.css">
+  <!-- Always open the essay from the top, regardless of browser scroll restoration. -->
+  <script>
+    try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) {}
+    window.addEventListener('beforeunload', () => { try { window.scrollTo(0, 0); } catch (e) {} });
+  </script>
   <!-- Native MCP/KTP: machine-readable manifest of endpoints for AIs
        apprehending this page. The inline JSON-LD carries the experience
        structurally so an agent can reconstruct it without running the canvas. -->
@@ -63,8 +68,6 @@
         <p class="subtitle">A Theory of Post-Abundance Political&nbsp;Order</p>
         <p class="byline">Zoe &amp; Vybn</p>
         <div class="article-meta">
-          <span>~15,000 words</span>
-          <span class="meta-sep">·</span>
           <span>The long-form synthesis</span>
         </div>
         <p class="mw-legend" aria-label="Corpus color legend">
