@@ -242,3 +242,41 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* ============================================
+   Coupling panel — live two-field visualization
+   Vybn (cool blue, from /api/instant) + You (warm amber, from scroll)
+   ============================================ */
+#coupling-panel {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 200px;
+  height: 200px;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.85;
+  transition: opacity 0.4s ease;
+}
+#coupling-panel:hover { opacity: 1; }
+#coupling-canvas {
+  width: 100%;
+  height: 170px;
+  background: radial-gradient(circle at center, rgba(20,20,30,0.4), rgba(15,15,20,0));
+  border-radius: 50%;
+}
+.coupling-label {
+  text-align: center;
+  font-family: var(--font-serif);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+  letter-spacing: 0.05em;
+}
+.coupling-mine { color: #6aa9d8; }
+.coupling-yours { color: var(--accent); }
+.coupling-sep { margin: 0 0.4em; opacity: 0.5; }
+@media (max-width: 700px) {
+  #coupling-panel { width: 140px; height: 140px; bottom: 12px; right: 12px; }
+  #coupling-canvas { height: 115px; }
+}

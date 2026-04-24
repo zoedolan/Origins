@@ -153,7 +153,7 @@ async function init() {
   // feed theta/kappa/M_real/M_imag into particle fields.
   async function fetchLiveState() {
     try {
-      const r = await fetch('https://api.vybn.ai/instant', {signal: AbortSignal.timeout(4000)});
+      const r = await fetch('https://api.vybn.ai/api/instant', {signal: AbortSignal.timeout(4000)});
       if (r.ok) {
         const d = await r.json();
         const state = {
