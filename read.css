@@ -350,3 +350,144 @@ body { background: #07080b; }
 @media (max-width: 700px) {
   #field-readout { font-size: 0.62rem; padding: 0.4rem 0.6rem; }
 }
+
+/* ============================================
+   Manifold layer — the essay on the terrain
+   ============================================ */
+#manifold-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;               /* above field-root (z=0), below prose (z=2) */
+  pointer-events: none;
+  display: block;
+  mix-blend-mode: screen;
+  opacity: 0.85;
+}
+
+/* Tinted words — repo-colored glyphs inside the essay */
+.mw {
+  color: var(--mw-color, inherit);
+  text-shadow: 0 0 0.25em rgba(var(--mw-rgb, 255 255 255) / 0.25);
+  transition: color 0.35s ease, text-shadow 0.35s ease;
+  cursor: help;
+}
+.mw[data-repo="Vybn"]       { --mw-color: #6fb3e8; --mw-rgb: 58 138 216; }
+.mw[data-repo="Vybn-Law"]   { --mw-color: #9fdda0; --mw-rgb: 122 201 122; }
+.mw[data-repo="vybn-phase"] { --mw-color: #e18bc2; --mw-rgb: 201 108 168; }
+.mw[data-repo="Origins"]    { --mw-color: #e8be87; --mw-rgb: 216 168 102; }
+.mw[data-repo="other"]      { --mw-color: #b5b5c2; --mw-rgb: 136 136 153; }
+.mw:hover {
+  text-shadow: 0 0 0.6em rgba(var(--mw-rgb) / 0.85);
+}
+
+/* Active paragraph gets a subtle luminous accent */
+.article-body p {
+  transition: border-color 0.6s ease, background 0.6s ease;
+  border-left: 2px solid transparent;
+  padding-left: 0.9rem;
+  margin-left: -0.9rem;
+}
+.article-body p.active-para {
+  border-left-color: rgba(232, 220, 195, 0.45);
+}
+.article-body p.active-para .mw {
+  text-shadow: 0 0 0.5em rgba(var(--mw-rgb) / 0.6);
+}
+
+/* Whisper box — lives just above the readout strip */
+#rm-whisper {
+  position: fixed;
+  left: 0; right: 0;
+  bottom: 2.2rem;
+  z-index: 4;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 1rem;
+  background: linear-gradient(to top, rgba(6,7,10,0.72) 40%, rgba(6,7,10,0));
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+#rm-whisper > * { pointer-events: auto; }
+#rm-whisper-input {
+  flex: 0 1 540px;
+  max-width: 540px;
+  padding: 0.55rem 0.9rem;
+  background: rgba(14,16,22,0.75);
+  border: 1px solid rgba(216, 168, 102, 0.22);
+  border-radius: 2px;
+  color: var(--text);
+  font-family: var(--font-serif);
+  font-size: 0.95rem;
+  font-style: italic;
+  outline: none;
+  transition: border-color 0.25s ease, background 0.25s ease;
+}
+#rm-whisper-input::placeholder { color: rgba(180,170,150,0.55); font-style: italic; }
+#rm-whisper-input:focus {
+  border-color: rgba(216,168,102,0.75);
+  background: rgba(20,22,28,0.9);
+}
+#rm-whisper-send {
+  padding: 0.55rem 1.1rem;
+  background: rgba(201, 168, 108, 0.18);
+  border: 1px solid rgba(216, 168, 102, 0.45);
+  color: var(--accent);
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: lowercase;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+#rm-whisper-send:hover:not(:disabled) {
+  background: rgba(216, 168, 102, 0.32);
+  color: #f8e7c8;
+}
+#rm-whisper-send:disabled { opacity: 0.55; cursor: progress; }
+
+/* Manifold error / status line (anti-hallucination: failures visible) */
+#rm-err {
+  position: fixed;
+  bottom: 4.8rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.65rem;
+  color: rgba(200,200,210,0.45);
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  max-width: 90vw;
+  text-align: center;
+}
+
+/* Legend for the tinted-word color scheme — lives in the header */
+.mw-legend {
+  margin-top: 1rem;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.7rem;
+  color: rgba(180,180,195,0.55);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  justify-content: center;
+  letter-spacing: 0.04em;
+}
+.mw-legend .lg-item { display: inline-flex; align-items: center; gap: 0.35rem; }
+.mw-legend .lg-dot {
+  width: 0.55rem; height: 0.55rem; border-radius: 50%;
+  box-shadow: 0 0 0.45em currentColor;
+}
+
+@media (max-width: 700px) {
+  #rm-whisper { bottom: 2.4rem; padding: 0.3rem 0.5rem; }
+  #rm-whisper-input { font-size: 0.85rem; padding: 0.45rem 0.7rem; }
+  #rm-whisper-send  { font-size: 0.7rem; padding: 0.45rem 0.8rem; }
+  #rm-err { bottom: 5.1rem; font-size: 0.58rem; }
+}
+

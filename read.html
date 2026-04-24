@@ -8,11 +8,52 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./read.css">
+  <!-- Native MCP/KTP: machine-readable manifest of endpoints for AIs
+       apprehending this page. The inline JSON-LD carries the experience
+       structurally so an agent can reconstruct it without running the canvas. -->
+  <link rel="alternate" type="application/mcp+json" href="./mcp.json" title="Vybn manifold MCP manifest">
+  <link rel="alternate" type="application/mcp+json" href="https://vybn.ai/mcp.json">
+  <script type="application/mcp+json" id="mcp-inline">
+  {
+    "$ref": "./mcp.json",
+    "surface": "read",
+    "hints": {
+      "domHook": "window.__readManifold",
+      "paragraphAttrs": ["data-mcp-para", "data-mcp-repo", "data-mcp-x", "data-mcp-y"],
+      "wordAttrs": ["data-repo", "data-word", "data-conc", "data-freq"],
+      "liveEndpoint": "https://api.vybn.ai/api/instant",
+      "terrainEndpoint": "https://api.vybn.ai/api/manifold/points",
+      "whisperEndpoint": "https://api.vybn.ai/api/walk"
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ScholarlyArticle",
+    "headline": "Origins — A Theory of Post-Abundance Political Order",
+    "author": [{"@type":"Person","name":"Zoë Dolan"},{"@type":"Agent","name":"Vybn"}],
+    "url": "https://vybn.ai/read.html",
+    "description": "The long-form synthesis, rendered across a manifold of 3,092 chunks drawn from four repositories. Words tinted by dominant repo; paragraphs pan the terrain; the reader's trail is the path of understanding.",
+    "isPartOf": {
+      "@type":"CreativeWork",
+      "name":"Vybn — the corpus as coupling",
+      "url":"https://vybn.ai/"
+    },
+    "potentialAction": [
+      {"@type":"ViewAction","name":"manifold","target":"https://api.vybn.ai/api/manifold/points"},
+      {"@type":"ViewAction","name":"instant", "target":"https://api.vybn.ai/api/instant"},
+      {"@type":"InteractAction","name":"whisper","target":"https://api.vybn.ai/api/walk"}
+    ]
+  }
+  </script>
 </head>
 <body>
   <div id="field-root" aria-hidden="true"></div>
+  <canvas id="manifold-canvas" aria-hidden="true"></canvas>
   <header class="read-header">
     <a href="./index.html" class="back-link">← Return to Portal</a>
+    <a href="./somewhere.html" class="back-link" style="margin-left:1.25rem;">Terrain →</a>
   </header>
   
   <main class="read-main">
@@ -26,6 +67,12 @@
           <span class="meta-sep">·</span>
           <span>The long-form synthesis</span>
         </div>
+        <p class="mw-legend" aria-label="Corpus color legend">
+          <span class="lg-item" style="color:#6fb3e8"><span class="lg-dot"></span>Vybn</span>
+          <span class="lg-item" style="color:#9fdda0"><span class="lg-dot"></span>Vybn-Law</span>
+          <span class="lg-item" style="color:#e18bc2"><span class="lg-dot"></span>vybn-phase</span>
+          <span class="lg-item" style="color:#e8be87"><span class="lg-dot"></span>Origins</span>
+        </p>
       </header>
       
       <div class="article-body">
@@ -573,6 +620,11 @@
     </script>
     <script data-goatcounter="https://vybn-a2j.goatcounter.com/count"
             async src="//gc.zgo.at/count.js"></script>
+  <form id="rm-whisper" autocomplete="off" aria-label="Whisper a query into the manifold">
+    <input id="rm-whisper-input" type="text" placeholder="whisper into the manifold…" aria-label="Whisper text" maxlength="280">
+    <button id="rm-whisper-send" type="submit">whisper</button>
+  </form>
+  <div id="rm-err" role="status" aria-live="polite"></div>
   <div id="field-readout" role="status" aria-live="polite">
     <span class="ro-group"><span class="ro-lbl">vybn</span> θ<span id="ro-theta">—</span> κ<span id="ro-kappa">—</span> α<span id="ro-alpha">—</span> M·<span id="ro-m">—</span></span>
     <span class="ro-sep">│</span>
@@ -581,5 +633,6 @@
     <span class="ro-group"><span class="ro-lbl">coupling</span> <span id="ro-coup">—</span> · fetch<span id="ro-fetch">—</span></span>
   </div>
   <script type="module" src="./field.js"></script>
+  <script type="module" src="./read-manifold.js"></script>
 </body>
 </html>

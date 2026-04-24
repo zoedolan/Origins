@@ -6,6 +6,21 @@
   <title>somewhere — Vybn</title>
   <meta name="description" content="The corpus as terrain. The walk as breath. Come close to a point and it will speak.">
   <meta name="api-base" content="https://api.vybn.ai">
+  <!-- Native MCP/KTP manifest for AIs apprehending this page -->
+  <link rel="alternate" type="application/mcp+json" href="./mcp.json" title="Vybn manifold MCP manifest">
+  <link rel="alternate" type="application/mcp+json" href="https://vybn.ai/mcp.json">
+  <script type="application/mcp+json" id="mcp-inline">
+  {
+    "$ref": "./mcp.json",
+    "surface": "somewhere",
+    "hints": {
+      "domHook": "window.__somewhere",
+      "liveEndpoint": "https://api.vybn.ai/api/instant",
+      "terrainEndpoint": "https://api.vybn.ai/api/manifold/points",
+      "whisperEndpoint": "https://api.vybn.ai/api/walk"
+    }
+  }
+  </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -318,7 +333,7 @@
 
     // Loaded manifold state
     let points = [];          // [{x,y,repo,src,preview,color,sx,sy,baseAlpha,phase}]
-    let srcIndex = new Map(); // src -> index into points
+    let srcIndex = new Map(); // src -> [idx1, idx2, ...]  (one source => many chunks)
     let manifoldBounds = null;
     let manifoldLoaded = false;
 
@@ -336,6 +351,12 @@
     // Whisper state — bright transient trace points from /api/walk POST
     const whisperTrace = [];  // [{x, y, t0, label, preview}]
     const WHISPER_LIFE_MS = 9000;
+
+    // Walk trail — the last WALK_TRAIL_MAX centroid positions, in manifold
+    // coords, stored with their timestamp. Drawn as a fading thread so M's
+    // accumulated journey is visible, not just its current warmth.
+    const WALK_TRAIL_MAX = 60;
+    const walkTrail = [];     // [{x, y, t0}]  newest at end
 
     // Visitor state
     const vis = { mx: -9999, my: -9999, hover: null, hoverEnteredAt: 0, idle: 0, lastMove: performance.now() };
@@ -379,7 +400,12 @@
           };
         });
         srcIndex.clear();
-        points.forEach((p, i) => srcIndex.set(p.src, i));
+        // src -> [idx1, idx2, ...]  (one source string can own many chunks)
+        points.forEach((p, i) => {
+          const arr = srcIndex.get(p.src);
+          if (arr) arr.push(i);
+          else srcIndex.set(p.src, [i]);
+        });
         manifoldLoaded = true;
         manifoldBounds = d.projection || null;
         console.log(`[somewhere] manifold: ${points.length} points loaded`);
@@ -409,17 +435,21 @@
           const src = a.source || a.src;
           if (!src) continue;
           // Exact match first, then loose suffix match
-          let idx = srcIndex.get(src);
-          if (idx === undefined) {
+          let indices = srcIndex.get(src);
+          if (!indices) {
             for (const [k, v] of srcIndex) {
-              if (k.endsWith(src) || src.endsWith(k)) { idx = v; break; }
+              if (k.endsWith(src) || src.endsWith(k)) { indices = v; break; }
             }
           }
-          if (idx !== undefined) {
+          if (indices && indices.length) {
             resolved.push({
-              src, idx, score: a.score || 0, rel: a.rel || 0,
+              src,
+              idx: indices[0],          // primary (for hover compatibility)
+              indices: indices.slice(), // ALL chunks from this source — light them all
+              count: indices.length,
+              score: a.score || 0, rel: a.rel || 0,
               preview: (a.preview || '').replace(/\s+/g,' ').trim(),
-              point: points[idx],
+              point: points[indices[0]],
             });
           }
         }
@@ -437,11 +467,27 @@
         }
         live.lastAnchorSrcs = newSrcs;
 
-        // Centroid (in manifold coords, screen-mapped during render)
+        // Centroid over ALL chunks of ALL anchors (weighted by how many chunks
+        // each source owns — dedup fix per local Opus directive #1).
         if (resolved.length) {
-          let mx = 0, my = 0;
-          for (const a of resolved) { mx += a.point.x; my += a.point.y; }
-          live.centroidTarget = { x: mx / resolved.length, y: my / resolved.length };
+          let mx = 0, my = 0, total = 0;
+          for (const a of resolved) {
+            for (const i of a.indices) {
+              const p = points[i];
+              if (!p) continue;
+              mx += p.x; my += p.y; total++;
+            }
+          }
+          if (total > 0) {
+            const target = { x: mx / total, y: my / total };
+            live.centroidTarget = target;
+            // Accumulate walk trail when the centroid has moved meaningfully.
+            const last = walkTrail[walkTrail.length - 1];
+            if (!last || Math.hypot(target.x - last.x, target.y - last.y) > 0.008) {
+              walkTrail.push({ x: target.x, y: target.y, t0: performance.now() });
+              if (walkTrail.length > WALK_TRAIL_MAX) walkTrail.shift();
+            }
+          }
         }
 
         live.lastOK = Date.now();
@@ -500,18 +546,20 @@
         for (const t of trace.slice(0, 12)) {
           const src = t.source;
           if (!src) continue;
-          let idx = srcIndex.get(src);
-          if (idx === undefined) {
+          let indices = srcIndex.get(src);
+          if (!indices) {
             for (const [k, v] of srcIndex) {
-              if (k.endsWith(src) || src.endsWith(k)) { idx = v; break; }
+              if (k.endsWith(src) || src.endsWith(k)) { indices = v; break; }
             }
           }
-          if (idx === undefined) continue;
-          const p = points[idx];
-          whisperTrace.push({
-            x: p.x, y: p.y, t0: now, label: text,
-            preview: (t.text || '').replace(/\s+/g, ' ').trim().slice(0, 200),
-          });
+          if (!indices) continue;
+          for (const idx of indices.slice(0, 3)) {
+            const p = points[idx];
+            whisperTrace.push({
+              x: p.x, y: p.y, t0: now, label: text,
+              preview: (t.text || '').replace(/\s+/g, ' ').trim().slice(0, 200),
+            });
+          }
         }
         // Trigger an immediate re-poll so the anchors update
         pollInstant();
@@ -675,11 +723,39 @@
         ctx.restore();
 
         // Mark points under whisper with transient glow
-        const idx = srcIndex.get(w.label); // only if label happens to match src (rare)
-        if (idx !== undefined) points[idx].glow = Math.max(points[idx].glow, life);
+        const indices = srcIndex.get(w.label); // only if label happens to match src (rare)
+        if (indices) for (const idx of indices) points[idx].glow = Math.max(points[idx].glow, life);
       }
 
       // ── 3. M as warmth at anchor-centroid + capillaries ────────────────
+      // Walk trail: fading thread of prior centroids. The journey is visible,
+      // not just the arrival. Drawn before warmth so the warmth emerges from the head.
+      if (walkTrail.length > 1) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.lineCap = 'round';
+        for (let i = 1; i < walkTrail.length; i++) {
+          const a = walkTrail[i - 1], b = walkTrail[i];
+          const [ax, ay] = mapXY(a.x, a.y);
+          const [bx, by] = mapXY(b.x, b.y);
+          const age01 = i / walkTrail.length;
+          const alpha = 0.04 + age01 * 0.32;
+          ctx.strokeStyle = `rgba(246, 224, 180, ${alpha})`;
+          ctx.lineWidth = 0.6 + age01 * 1.1;
+          ctx.beginPath();
+          ctx.moveTo(ax, ay);
+          ctx.lineTo(bx, by);
+          ctx.stroke();
+          if (i > walkTrail.length - 6) {
+            ctx.fillStyle = `rgba(255, 240, 210, ${alpha * 0.8})`;
+            ctx.beginPath();
+            ctx.arc(bx, by, 1.0 + age01 * 0.9, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        ctx.restore();
+      }
+
       if (live.anchors.length && live.centroidTarget) {
         // Ease centroid on screen
         const [targetSX, targetSY] = mapXY(live.centroidTarget.x, live.centroidTarget.y);
