@@ -143,6 +143,30 @@ const readerTrail = [];      // [{x,y,t}]
 const whisperTrace = [];     // bright transient path points
 let activeParagraph = null;
 let activeParagraphIdx = -1;
+let hoveredWord = null;      // {word, repo, el}
+let emergenceFlashes = [];   // {x,y,t0,color}
+const wordEmitterRects = new Map(); // word -> Array<{sx,sy,el}> (screen pos of each .mw token)
+let wordRectsDirty = true;
+let lastScrollY = -1;
+
+// Synapse-bridge tuning — the membrane between text and terrain
+const BRIDGE_MAX_PER_WORD = 2;    // chunks to wire per tinted word (default)
+const BRIDGE_MAX_ON_HOVER = 6;    // extra when a word is hovered
+const BRIDGE_MAX_PARAGRAPH = 24;  // hard cap per paragraph (keep drawing tractable)
+const BRIDGE_BASE_ALPHA   = 0.32;
+const BRIDGE_HOVER_ALPHA  = 0.75;
+const PULSE_FREQ          = 0.0013; // breathing rhythm
+const RECT_MIN_INTERVAL   = 80;     // ms between word-rect recomputes (throttle)
+const POLL_INTERVAL_FG    = 8000;   // /api/instant poll when tab visible
+const POLL_INTERVAL_BG    = 45000;  // /api/instant poll when tab hidden
+
+// Word→span index so hover doesn't run a querySelectorAll on every mouseover
+const wordSpanIndex = new Map(); // word -> Array<HTMLElement>
+// Per-active-paragraph cache: chunks sorted by proximity to paragraph centroid
+const paragraphBridgeCache = new WeakMap(); // meta -> Map<word, sortedChunkIdx[]>
+let lastRectRefresh = 0;
+let hiddenMode = false;
+
 
 // ── Utilities ──────────────────────────────────────────────────────────────
 function tokenize(s) {
@@ -285,6 +309,9 @@ function wrapWords(rootSel) {
         frag.appendChild(span);
         anyTinted = true;
         wrapped++;
+        // build word→span[] index so hover can toggle instances O(1)
+        const arr = wordSpanIndex.get(lower);
+        if (arr) arr.push(span); else wordSpanIndex.set(lower, [span]);
       } else {
         frag.appendChild(document.createTextNode(part));
       }
@@ -392,11 +419,65 @@ function easeCamera() {
   camera.zoom += (camera.targetZoom - camera.zoom) * ZOOM_SMOOTH;
 }
 
+function refreshWordRects(force) {
+  const now = performance.now();
+  if (!force && !wordRectsDirty) return;
+  if (!force && now - lastRectRefresh < RECT_MIN_INTERVAL) return;
+  lastRectRefresh = now;
+  wordEmitterRects.clear();
+  if (!activeParagraph || !activeParagraph.el) { wordRectsDirty = false; return; }
+  const mws = activeParagraph.el.querySelectorAll('span.mw');
+  for (const el of mws) {
+    const rect = el.getBoundingClientRect();
+    if (rect.bottom < -40 || rect.top > H + 40) continue;
+    const word = el.dataset.word;
+    const repo = el.dataset.repo;
+    const entry = { sx: rect.left + rect.width / 2, sy: rect.top + rect.height * 0.95, el, repo };
+    const arr = wordEmitterRects.get(word);
+    if (arr) arr.push(entry); else wordEmitterRects.set(word, [entry]);
+  }
+  wordRectsDirty = false;
+}
+
+// Build a per-paragraph cache: for each tinted word in the paragraph, the
+// chunk indices sorted by proximity to the paragraph centroid. Computed once
+// when the paragraph becomes active, reused until it changes. Eliminates the
+// per-frame sort that dominated CPU.
+function getBridgeCacheFor(meta) {
+  if (!meta) return null;
+  let cache = paragraphBridgeCache.get(meta);
+  if (cache) return cache;
+  cache = new Map();
+  const centroid = meta.centroid;
+  for (const w of meta.words) {
+    const chunks = wordChunks.get(w);
+    if (!chunks || !chunks.length) continue;
+    if (centroid) {
+      const arr = chunks.slice().sort((a, b) => {
+        const pa = points[a], pb = points[b];
+        if (!pa || !pb) return 0;
+        const da = (pa.x-centroid.x)*(pa.x-centroid.x)+(pa.y-centroid.y)*(pa.y-centroid.y);
+        const db = (pb.x-centroid.x)*(pb.x-centroid.x)+(pb.y-centroid.y)*(pb.y-centroid.y);
+        return da - db;
+      });
+      cache.set(w, arr.slice(0, 10)); // only top-10 ever needed
+    } else {
+      cache.set(w, chunks.slice(0, 10));
+    }
+  }
+  paragraphBridgeCache.set(meta, cache);
+  return cache;
+}
+
 function renderFrame(t) {
   if (!ctx) return;
+  if (document.hidden) { return; } // pause entirely when tab hidden
   easeCamera();
+  // Word rects shift when scroll or resize changes — mark dirty, throttle refresh
+  if (window.scrollY !== lastScrollY) { wordRectsDirty = true; lastScrollY = window.scrollY; }
+  refreshWordRects(false);
   ctx.clearRect(0, 0, W, H);
-  if (!points.length) return;
+  if (!points.length) { requestAnimationFrame(renderFrame); return; }
 
   // Cache projected positions
   for (let i = 0; i < points.length; i++) {
@@ -470,6 +551,111 @@ function renderFrame(t) {
       ctx.beginPath();
       ctx.moveTo(c.x, c.y);
       ctx.quadraticCurveTo(mx, my, s.x, s.y);
+      ctx.stroke();
+    }
+  }
+
+  // 4a) Emergence halo — when the active paragraph draws from multiple repos,
+  //     the centroid shows a polychromatic ring for each repo proportional to
+  //     its share. Single-repo paragraphs render as a plain pool; multi-repo
+  //     paragraphs — the points of emergence — bloom.
+  if (activeParagraph && activeParagraph.centroid && activeSet && activeSet.size >= 2) {
+    const c = manifoldToScreen(activeParagraph.centroid.x, activeParagraph.centroid.y);
+    const tally = new Map();
+    for (const ci of activeSet) {
+      const r = points[ci] && points[ci].repo;
+      if (!r) continue;
+      tally.set(r, (tally.get(r) || 0) + 1);
+    }
+    const ordered = [...tally.entries()].sort((a,b)=>b[1]-a[1]);
+    const total   = [...tally.values()].reduce((a,b)=>a+b,0) || 1;
+    const pulse   = 0.85 + 0.15 * Math.sin(t * PULSE_FREQ);
+    let rad = 10 + pulse * 6;
+    for (const [repo, n] of ordered) {
+      const share = n / total;
+      const col = (REPO_COLORS[repo] || REPO_COLORS.other).rgb;
+      const w   = 2 + share * 10;
+      ctx.strokeStyle = `rgba(${col}, ${0.18 + share * 0.28})`;
+      ctx.lineWidth   = w;
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, rad, 0, Math.PI * 2);
+      ctx.stroke();
+      rad += w * 0.85 + 3;
+    }
+  }
+
+  // 4b) Synaptic bridges — the membrane crossing.
+  //     From each tinted word in the active paragraph, arc toward the chunks
+  //     on the terrain where that word lives. Coloured by repo, pulsing with
+  //     the live coupling, brightened when the word is hovered. Targets are
+  //     pre-sorted per paragraph (see getBridgeCacheFor) so per-frame work
+  //     stays O(visible emitters × BRIDGE_MAX_PER_WORD).
+  if (activeParagraph && wordEmitterRects.size) {
+    const bridgeCache = getBridgeCacheFor(activeParagraph);
+    const pulse = 0.75 + 0.25 * Math.sin(t * PULSE_FREQ + live.step * 0.007);
+    let budget = BRIDGE_MAX_PARAGRAPH;
+    for (const [word, emitters] of wordEmitterRects) {
+      if (budget <= 0) break;
+      const targets = (bridgeCache && bridgeCache.get(word)) || wordChunks.get(word);
+      if (!targets || !targets.length) continue;
+      const isHovered = hoveredWord && hoveredWord.word === word;
+      const perWord = isHovered ? BRIDGE_MAX_ON_HOVER : BRIDGE_MAX_PER_WORD;
+      const col = (REPO_COLORS[emitters[0].repo] || REPO_COLORS.other).rgb;
+      const alphaBase = (isHovered ? BRIDGE_HOVER_ALPHA : BRIDGE_BASE_ALPHA) * pulse;
+      for (const em of emitters) {
+        let drawn = 0;
+        for (let k = 0; k < targets.length && drawn < perWord; k++) {
+          const ci = targets[k];
+          const s = pointScreen[ci]; if (!s) continue;
+          const dx = s.x - em.sx, dy = s.y - em.sy;
+          const distSq = dx*dx + dy*dy;
+          if (distSq < 36) continue;
+          const dist = Math.sqrt(distSq);
+          const nx = -dy / dist, ny = dx / dist;
+          const bulge = Math.min(180, dist * 0.35) * 0.8; // drop per-frame sin to reduce cost
+          const mx = (em.sx + s.x) / 2 + nx * bulge;
+          const my = (em.sy + s.y) / 2 + ny * bulge;
+          const distFade = 520 / (dist + 140);
+          const alpha = alphaBase * (distFade < 1 ? distFade : 1);
+          ctx.strokeStyle = `rgba(${col}, ${alpha})`;
+          ctx.lineWidth = isHovered ? 1.35 : 0.6;
+          ctx.beginPath();
+          ctx.moveTo(em.sx, em.sy);
+          ctx.quadraticCurveTo(mx, my, s.x, s.y);
+          ctx.stroke();
+          if (isHovered) {
+            ctx.fillStyle = `rgba(${col}, ${Math.min(1, alpha * 1.6)})`;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, 2.4, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          drawn++;
+          budget--;
+          if (budget <= 0) break;
+        }
+        if (budget <= 0) break;
+      }
+    }
+  }
+
+  // 4c) Emergence flashes — click ripples seeded by click/navigate events
+  if (emergenceFlashes.length) {
+    const now = t;
+    for (let i = emergenceFlashes.length - 1; i >= 0; i--) {
+      const f = emergenceFlashes[i];
+      const age = (now - f.t0) / 1000;
+      if (age > 2.2) { emergenceFlashes.splice(i, 1); continue; }
+      const s = manifoldToScreen(f.x, f.y);
+      const alpha = Math.max(0, 1 - age / 2.2);
+      ctx.strokeStyle = `rgba(${f.color}, ${alpha * 0.6})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, 8 + age * 140, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = `rgba(${f.color}, ${alpha * 0.3})`;
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, 4 + age * 80, 0, Math.PI * 2);
       ctx.stroke();
     }
   }
@@ -714,7 +900,12 @@ function setupWhisper() {
   });
 }
 
-// ── Hover on tinted word: log the chunks it appears in (agent-readable) ────
+// ── Hover + click on tinted word: bridge illumination + terrain travel ────
+let activeWordGlowing = [];
+function clearActiveWord() {
+  for (const n of activeWordGlowing) n.classList.remove('active-word');
+  activeWordGlowing = [];
+}
 function setupHover() {
   document.addEventListener('mouseover', (e) => {
     const tgt = e.target;
@@ -722,8 +913,70 @@ function setupHover() {
     const w = tgt.dataset.word;
     const chunks = wordChunks.get(w) || [];
     tgt.title = `${w} · ${chunks.length} chunks · ${tgt.dataset.repo} (${tgt.dataset.conc})`;
+    hoveredWord = { word: w, repo: tgt.dataset.repo, el: tgt };
+    clearActiveWord();
+    const siblings = wordSpanIndex.get(w);
+    if (siblings) {
+      for (const n of siblings) n.classList.add('active-word');
+      activeWordGlowing = siblings;
+    }
+  });
+  document.addEventListener('mouseout', (e) => {
+    const tgt = e.target;
+    if (!tgt || !tgt.classList || !tgt.classList.contains('mw')) return;
+    hoveredWord = null;
+    clearActiveWord();
+  });
+  // Click a tinted word: pan the canvas to its chunks' centroid and flash.
+  document.addEventListener('click', (e) => {
+    const tgt = e.target;
+    if (!tgt || !tgt.classList || !tgt.classList.contains('mw')) return;
+    const w = tgt.dataset.word;
+    const chunks = wordChunks.get(w); if (!chunks || !chunks.length) return;
+    let sx = 0, sy = 0, n = 0;
+    for (const ci of chunks) {
+      const p = points[ci]; if (!p) continue;
+      sx += p.x; sy += p.y; n++;
+    }
+    if (!n) return;
+    const cx = sx / n, cy = sy / n;
+    camera.targetCx = cx;
+    camera.targetCy = cy;
+    camera.targetZoom = 2.2;
+    const repo = tgt.dataset.repo;
+    const color = (REPO_COLORS[repo] || REPO_COLORS.other).rgb;
+    emergenceFlashes.push({ x: cx, y: cy, t0: performance.now(), color });
+    // Also seed the whisper trace so individual chunks blink
+    const now = performance.now();
+    for (const ci of chunks.slice(0, 8)) {
+      const p = points[ci]; if (!p) continue;
+      whisperTrace.push({ x: p.x, y: p.y, t0: now, label: w, preview: (p.preview || '').slice(0, 160) });
+    }
   });
 }
+
+// Resize / scroll invalidates the word-rect cache (throttled in refreshWordRects)
+window.addEventListener('resize', () => { wordRectsDirty = true; }, { passive: true });
+window.addEventListener('scroll', () => { wordRectsDirty = true; }, { passive: true });
+
+// Pause / resume rendering + polling based on tab visibility — the biggest
+// efficiency win: a hidden tab shouldn't burn CPU or hit the API.
+let instantTimer = null;
+function schedulePoll(ms) {
+  if (instantTimer) clearInterval(instantTimer);
+  instantTimer = setInterval(pollInstant, ms);
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    hiddenMode = true;
+    schedulePoll(POLL_INTERVAL_BG);
+  } else {
+    hiddenMode = false;
+    schedulePoll(POLL_INTERVAL_FG);
+    wordRectsDirty = true;
+    requestAnimationFrame(renderFrame); // resume the loop
+  }
+});
 
 // ── Degradation: if manifold fails, hide canvas but keep essay readable ───
 // Expose __readManifold early so agents can probe state even when the API is down.
@@ -789,7 +1042,7 @@ async function init() {
   window.__readManifold.ready = true;
 
   pollInstant();
-  setInterval(pollInstant, 5000);
+  schedulePoll(POLL_INTERVAL_FG);
   requestAnimationFrame(renderFrame);
 }
 
