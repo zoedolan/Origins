@@ -148,6 +148,27 @@ async function init() {
   
   isInitialized = true;
   animate();
+
+  // Live geometry: pull /instant from walk daemon every 5s,
+  // feed theta/kappa/M_real/M_imag into particle fields.
+  async function fetchLiveState() {
+    try {
+      const r = await fetch('https://api.vybn.ai/instant', {signal: AbortSignal.timeout(4000)});
+      if (r.ok) {
+        const d = await r.json();
+        const state = {
+          theta: d.theta_v ?? 0,
+          kappa: d.kappa ?? 0,
+          M_real: d.M_real ?? null,
+          M_imag: d.M_imag ?? null,
+        };
+        if (organicField)  organicField.liveState  = state;
+        if (digitalField)  digitalField.liveState  = state;
+      }
+    } catch (_) { /* network hiccup — keep last state */ }
+  }
+  fetchLiveState();
+  setInterval(fetchLiveState, 5000);
 }
 
 // ============================================

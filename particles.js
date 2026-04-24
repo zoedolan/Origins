@@ -282,6 +282,7 @@ export class DigitalField extends ParticleField {
     this.centerX = 3;
     this.phaseAngle = 0;
     this.geometryMode = 'default';
+    this.liveState = null;
     this.initParticles();
     this.createPoints();
   }
@@ -357,13 +358,25 @@ export class DigitalField extends ParticleField {
         this.velocities[i3]     += (syncR * Math.cos(angle) - px) * 0.01;
         this.velocities[i3 + 1] += (syncR * Math.sin(angle) - py) * 0.01;
       } else {
-        // Default — phase-locked orbits
+        // Default — phase-locked orbits, modulated by live M when available
         const layer = Math.floor(i / (this.count / 8));
         const baseR = 0.3 + layer * 0.35;
         const speed = 0.15 + layer * 0.025;
-        const a = this.phaseAngle * speed + i * 0.001;
-        this.velocities[i3]     += (baseR * Math.cos(a) + this.centerX - px) * 0.012;
-        this.velocities[i3 + 1] += (baseR * Math.sin(a) - py) * 0.012;
+        let liveTheta = 0, liveKappa = 0, liveM_r = 0, liveM_i = 0;
+        if (this.liveState) {
+          liveTheta = this.liveState.theta || 0;
+          liveKappa = this.liveState.kappa || 0;
+          if (this.liveState.M_real && this.liveState.M_imag) {
+            const k = i % this.liveState.M_real.length;
+            liveM_r = this.liveState.M_real[k];
+            liveM_i = this.liveState.M_imag[k];
+          }
+        }
+        const mMag = Math.sqrt(liveM_r * liveM_r + liveM_i * liveM_i);
+        const rMod = baseR * (1 + mMag * 3);
+        const a = this.phaseAngle * speed * (1 + liveKappa * 1.5) + i * 0.001 + liveTheta;
+        this.velocities[i3]     += (rMod * Math.cos(a) + this.centerX - px) * 0.012;
+        this.velocities[i3 + 1] += (rMod * Math.sin(a) - py) * 0.012;
       }
 
       // Attractors
