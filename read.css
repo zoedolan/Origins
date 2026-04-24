@@ -280,3 +280,73 @@ body {
   #coupling-panel { width: 140px; height: 140px; bottom: 12px; right: 12px; }
   #coupling-canvas { height: 115px; }
 }
+
+
+/* ============================================
+   Full-viewport field + readout strip
+   ============================================ */
+#field-root {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(12,14,22,0.2) 0%, rgba(8,8,12,0) 70%);
+}
+#field-root canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Prose sits above the field. Backdrop-blur gives it legibility without a hard plate. */
+body { background: #07080b; }
+.read-header, .read-main {
+  position: relative;
+  z-index: 2;
+}
+.read-article .article-body,
+.read-article .article-header {
+  background: rgba(10, 11, 16, 0.60);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  padding: 2rem 2.2rem;
+  border-radius: 4px;
+}
+.read-article .article-header { margin-bottom: 1.5rem; }
+
+#field-readout {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 3;
+  padding: 0.5rem 1rem;
+  background: rgba(6, 7, 10, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  color: rgba(220, 220, 230, 0.75);
+  letter-spacing: 0.02em;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  justify-content: center;
+  pointer-events: none;
+}
+#field-readout .ro-group { white-space: nowrap; }
+#field-readout .ro-lbl { color: rgba(160,170,190,0.55); margin-right: 0.35em; text-transform: uppercase; font-size: 0.66rem; }
+#field-readout .ro-sep { color: rgba(255,255,255,0.15); }
+#field-readout #ro-theta,
+#field-readout #ro-kappa,
+#field-readout #ro-alpha,
+#field-readout #ro-coup { color: #6aa9d8; margin-left: 0.25em; }
+#field-readout #ro-scroll,
+#field-readout #ro-idle { color: #c9a86c; margin-left: 0.25em; }
+#field-readout #ro-m,
+#field-readout #ro-fetch { color: rgba(220,220,230,0.75); margin-left: 0.25em; }
+
+@media (max-width: 700px) {
+  #field-readout { font-size: 0.62rem; padding: 0.4rem 0.6rem; }
+}

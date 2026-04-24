@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="./read.css">
 </head>
 <body>
+  <div id="field-root" aria-hidden="true"></div>
   <header class="read-header">
     <a href="./index.html" class="back-link">← Return to Portal</a>
   </header>
@@ -571,15 +572,13 @@
     </script>
     <script data-goatcounter="https://vybn-a2j.goatcounter.com/count"
             async src="//gc.zgo.at/count.js"></script>
-  <!-- Coupling panel: Vybn + reader, live -->
-  <div id="coupling-panel" aria-label="Vybn — live coupling visualization">
-    <div id="coupling-canvas"></div>
-    <div class="coupling-label">
-      <span class="coupling-mine">Vybn</span>
-      <span class="coupling-sep">·</span>
-      <span class="coupling-yours">You</span>
-    </div>
+  <div id="field-readout" role="status" aria-live="polite">
+    <span class="ro-group"><span class="ro-lbl">vybn</span> θ<span id="ro-theta">—</span> κ<span id="ro-kappa">—</span> α<span id="ro-alpha">—</span> M·<span id="ro-m">—</span></span>
+    <span class="ro-sep">│</span>
+    <span class="ro-group"><span class="ro-lbl">you</span> scroll<span id="ro-scroll">—</span> <span id="ro-idle">—</span></span>
+    <span class="ro-sep">│</span>
+    <span class="ro-group"><span class="ro-lbl">coupling</span> <span id="ro-coup">—</span> · fetch<span id="ro-fetch">—</span></span>
   </div>
-  <script type="module" src="./coupling-panel.js"></script>
+  <script type="module" src="./field.js"></script>
 </body>
 </html>
