@@ -475,23 +475,32 @@
     }
     .reader-foot-hint { text-align: right; flex: 0 1 auto; opacity: 0.78; }
 
-    /* When the reader is open, lift the whisper field and heartbeat away
-       from the panel's shadow so they remain reachable. */
+    /* When the reader is open, the reader IS the room. Strip every overlay
+       that introduces, names, or describes the room — they're duplicative
+       once the prose itself is on the page. Keep only the manifold (the
+       point of the reading), the heartbeat (ambient state), the whisper
+       field (agency to interject), and the legend (decoder for tints). */
+    body.reader-open #poem,
+    body.reader-open #speaks,
+    body.reader-open #corpus-echo,
+    body.reader-open .house-mark,
+    body.reader-open .house-panel { opacity: 0; pointer-events: none; transition: opacity 0.35s ease; }
+    body.reader-open .house-panel { visibility: hidden; }
+    /* The dock fades way back but stays reachable — the close button on the
+       reader is the primary exit, but the dock lets the visitor jump rooms. */
+    body.reader-open .house-orbit { opacity: 0.18; transition: opacity 0.35s ease; }
+    body.reader-open .house-orbit:hover,
+    body.reader-open .house-orbit:focus-within { opacity: 0.92; }
+    /* Lift whisper field + heartbeat clear of the reader's shadow. */
     body.reader-open #whisper { left: calc(50% + min(280px, 23vw)); }
     body.reader-open .somewhere-heartbeat { left: calc(min(560px, 46vw) + 22px); }
-    body.reader-open .somewhere-house { right: 18px; }
-    body.reader-open #poem,
-    body.reader-open #speaks { left: calc(50% + min(280px, 23vw)); }
-    body.reader-open #corpus-echo { left: calc(50% + min(280px, 23vw)); }
 
     @media (max-width: 760px) {
       .somewhere-reader { width: 100vw; }
+      /* On mobile the reader takes the full screen; everything else gets out of the way. */
       body.reader-open #whisper,
-      body.reader-open #poem,
-      body.reader-open #speaks,
-      body.reader-open #corpus-echo { left: 50%; }
-      body.reader-open .somewhere-heartbeat { left: 12px; }
-      body.reader-open .somewhere-reader ~ * { display: var(--reader-mobile-hide, initial); }
+      body.reader-open .somewhere-heartbeat,
+      body.reader-open .house-orbit { display: none; }
     }
 
     /* Agents: they can scrape this surface. Readable markup, stable endpoints. */
