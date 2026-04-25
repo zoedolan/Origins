@@ -241,13 +241,17 @@
         idx = Math.max(0, Math.min(panels.length - 1, n));
         panels.forEach((panel, i) => panel.classList.toggle('active', i === idx));
       }
+      function openRitual() {
+        ritual.hidden = false;
+        show(0);
+        ritual.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
       document.querySelectorAll('.ritual-open').forEach(button => {
-        button.addEventListener('click', () => {
-          ritual.hidden = false;
-          show(0);
-          ritual.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
+        button.addEventListener('click', openRitual);
       });
+      if (location.hash === '#letter') {
+        window.addEventListener('load', openRitual);
+      }
       ritual.addEventListener('click', event => {
         if (event.target.matches('[data-ritual-next]')) show(idx + 1);
         if (event.target.matches('[data-ritual-prev]')) show(idx - 1);

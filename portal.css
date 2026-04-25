@@ -580,6 +580,16 @@ body {
   color: var(--cool-ice);
 }
 
+.portal-link-album {
+  border-color: rgba(255, 190, 125, 0.34);
+  background: radial-gradient(circle at 50% 0%, rgba(255, 190, 125, 0.12), rgba(10, 10, 15, 0.36));
+}
+
+.portal-link-album:hover {
+  border-color: var(--warm-gold);
+  background: rgba(212, 165, 116, 0.13);
+}
+
 /* A-Iconoclast context */
 .portal-art-context {
   max-width: 520px;
@@ -1290,4 +1300,41 @@ body {
   .nft-wrap {
     z-index: 16;
   }
+}
+
+
+.portal-art-threshold {
+  border: 1px solid rgba(212, 168, 83, 0.18);
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  background: rgba(10, 10, 15, 0.34);
+  backdrop-filter: blur(10px);
+}
+
+.portal-art-kicker {
+  font-family: var(--font-sans) !important;
+  font-size: 0.64rem !important;
+  color: var(--warm-gold) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.14em !important;
+  margin-bottom: 0.35rem !important;
+}
+
+.portal-art-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.65rem;
+  margin-top: 0.75rem !important;
+}
+
+.portal-art-actions a {
+  border: 1px solid rgba(212, 168, 83, 0.28);
+  border-radius: 999px;
+  padding: 0.35rem 0.62rem;
+  background: rgba(212, 168, 83, 0.06);
+}
+
+.portal-art-actions a:hover {
+  background: rgba(212, 168, 83, 0.13);
 }
