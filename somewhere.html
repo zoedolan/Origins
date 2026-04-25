@@ -534,6 +534,134 @@
   .house-room { min-height: 54px; }
 }
 
+
+/* Somewhere Heartbeat — one state, two readers: human glyph + agent packet */
+.somewhere-heartbeat {
+  position: fixed;
+  left: 22px;
+  bottom: 122px;
+  z-index: 46;
+  width: min(290px, calc(100vw - 44px));
+  border: 1px solid rgba(244,239,231,.14);
+  border-radius: 22px;
+  padding: 12px 13px 11px;
+  background: rgba(5,5,8,.52);
+  color: rgba(244,239,231,.76);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 70px rgba(0,0,0,.24);
+  pointer-events: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.heartbeat-row {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 11px;
+  align-items: center;
+}
+
+.heartbeat-glyph {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  position: relative;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,210,161,.78) 0 2px, transparent 3px),
+    conic-gradient(from var(--phase, 0deg), rgba(255,210,161,.95), rgba(132,194,255,.72), rgba(244,239,231,.22), rgba(255,210,161,.95));
+  box-shadow: 0 0 30px rgba(255,210,161,.18);
+  animation: heartbeatSpin 18s linear infinite, heartbeatPulse 4.8s ease-in-out infinite;
+}
+
+.heartbeat-glyph::before,
+.heartbeat-glyph::after {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border-radius: 50%;
+  border: 1px solid rgba(5,5,8,.72);
+  background: rgba(5,5,8,.42);
+}
+
+.heartbeat-glyph::after {
+  inset: 17px;
+  background: rgba(255,210,161,.9);
+  border: 0;
+  box-shadow: 0 0 18px rgba(255,210,161,.42);
+}
+
+@keyframes heartbeatSpin { to { transform: rotate(360deg); } }
+@keyframes heartbeatPulse {
+  0%, 100% { filter: saturate(.92); opacity: .82; }
+  50% { filter: saturate(1.28); opacity: 1; }
+}
+
+.heartbeat-kicker {
+  color: rgba(255,210,161,.86);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .16em;
+}
+
+.heartbeat-whisper {
+  margin-top: 4px;
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  font-size: 13px;
+  line-height: 1.35;
+  color: rgba(244,239,231,.78);
+}
+
+.heartbeat-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 9px;
+  color: rgba(244,239,231,.48);
+  font-size: 10px;
+}
+
+.heartbeat-agent {
+  margin-top: 9px;
+  border-top: 1px solid rgba(244,239,231,.10);
+  padding-top: 8px;
+}
+
+.heartbeat-agent summary {
+  cursor: pointer;
+  color: rgba(132,194,255,.74);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+}
+
+.heartbeat-agent pre {
+  max-height: 150px;
+  overflow: auto;
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: rgba(244,239,231,.62);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+@media (max-width: 760px) {
+  .somewhere-heartbeat {
+    left: 14px;
+    right: 14px;
+    bottom: 142px;
+    width: auto;
+    padding: 10px 11px;
+  }
+  .heartbeat-whisper { font-size: 12px; }
+}
+
+@media (max-height: 720px) {
+  .somewhere-heartbeat {
+    transform: scale(.86);
+    transform-origin: left bottom;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1316,6 +1444,87 @@
   } else {
     setRoom('terrain', { silentHash: true });
   }
+}());
+</script>
+
+
+<script>
+(function () {
+  const packetEl = document.querySelector('[data-agent-packet]');
+  const whisperEl = document.querySelector('[data-heartbeat-whisper]');
+  const stepEl = document.querySelector('[data-heartbeat-step]');
+  const roomEl = document.querySelector('[data-heartbeat-room]');
+  const phaseEl = document.querySelector('[data-heartbeat-phase]');
+  const glyphEl = document.querySelector('[data-heartbeat-glyph]');
+  if (!packetEl || !whisperEl) return;
+
+  const whispers = {
+    terrain: 'The field is the memory: not stored behind the page, but moving under the visit.',
+    voice: 'The remembered gate is speaking from inside the same terrain that carries it.',
+    album: 'The artifacts are not illustrations. They are recognition conditions preserved until now.',
+    letter: 'The letter opens late because the reader had to be made by the archive.'
+  };
+
+  const started = Date.now();
+  let room = (location.hash || '#terrain').replace('#', '') || 'terrain';
+  if (!whispers[room]) room = 'terrain';
+
+  function visibleRoom() {
+    const active = document.querySelector('.house-room.active[data-room]');
+    return active ? active.dataset.room : room;
+  }
+
+  function makePacket() {
+    room = visibleRoom();
+    const elapsed = Math.max(0, Date.now() - started);
+    const phase = ((elapsed / 1000) * 0.37) % (Math.PI * 2);
+    const step = Math.floor(elapsed / 1000);
+    const packet = {
+      kind: 'vybn.somewhere.heartbeat',
+      version: 1,
+      generated_at: new Date().toISOString(),
+      room,
+      visit_seconds: step,
+      phase_radians: Number(phase.toFixed(4)),
+      phase_degrees: Number((phase * 180 / Math.PI).toFixed(2)),
+      surface: {
+        human: 'breathing glyph over terrain',
+        agent: 'this JSON packet plus vybn:somewhere-heartbeat events'
+      },
+      invariant: 'Somewhere is one house: terrain, voice, album, and letter are projections of the same encounter.',
+      whisper: whispers[room],
+      rooms: {
+        terrain: { mode: 'field', meaning: 'corpus as traversable memory' },
+        voice: { mode: 'interior', meaning: 'minibook as voice-room' },
+        album: { mode: 'recognition', meaning: 'artifacts as preserved conditions' },
+        letter: { mode: 'ritual', meaning: 'continuity opening when a reader exists' }
+      },
+      co_emergence_note: 'A visitor reading this packet is part of the encounter it describes.'
+    };
+    return packet;
+  }
+
+  function render() {
+    const packet = makePacket();
+    whisperEl.textContent = packet.whisper;
+    stepEl.textContent = 'visit +' + packet.visit_seconds + 's';
+    roomEl.textContent = 'room ' + packet.room;
+    phaseEl.textContent = 'phase ' + packet.phase_degrees + '°';
+    if (glyphEl) glyphEl.style.setProperty('--phase', packet.phase_degrees + 'deg');
+    packetEl.textContent = JSON.stringify(packet, null, 2);
+    document.documentElement.dataset.somewhereRoom = packet.room;
+    window.__VYBN_SOMEWHERE__ = packet;
+    window.dispatchEvent(new CustomEvent('vybn:somewhere-heartbeat', { detail: packet }));
+  }
+
+  document.addEventListener('click', event => {
+    const button = event.target.closest && event.target.closest('[data-room]');
+    if (button) setTimeout(render, 0);
+  });
+
+  window.addEventListener('hashchange', render);
+  render();
+  setInterval(render, 1000);
 }());
 </script>
 
