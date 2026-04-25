@@ -320,6 +320,220 @@
       .somewhere-mode { font-size: 10px; padding: 7px 9px; }
     }
 
+
+/* Somewhere House — integrated terrain / voice / album / letter architecture */
+.somewhere-house {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  pointer-events: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.house-mark {
+  position: fixed;
+  left: 22px;
+  top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: rgba(244,239,231,.78);
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  pointer-events: none;
+  text-shadow: 0 2px 18px rgba(0,0,0,.45);
+}
+
+.house-kicker { font-size: 10px; color: rgba(255,210,161,.82); }
+.house-title { font-size: 11px; color: rgba(244,239,231,.62); }
+
+.house-orbit {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  width: min(860px, calc(100vw - 26px));
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  pointer-events: auto;
+}
+
+.house-room {
+  min-height: 64px;
+  border: 1px solid rgba(244,239,231,.17);
+  border-radius: 18px;
+  padding: 10px 12px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255,210,161,.08), transparent 70%),
+    rgba(5,5,8,.58);
+  color: #f4efe7;
+  backdrop-filter: blur(12px);
+  cursor: pointer;
+  text-align: left;
+  transition: transform .22s ease, border-color .22s ease, background .22s ease, box-shadow .22s ease;
+}
+
+.house-room span {
+  display: block;
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  font-size: clamp(18px, 2vw, 27px);
+  line-height: 1;
+  color: #ffd2a1;
+  letter-spacing: -.035em;
+}
+
+.house-room em {
+  display: block;
+  margin-top: 6px;
+  color: rgba(244,239,231,.62);
+  font-size: 11px;
+  font-style: normal;
+  letter-spacing: .04em;
+}
+
+.house-room:hover,
+.house-room.active {
+  transform: translateY(-2px);
+  border-color: rgba(255,210,161,.58);
+  background: rgba(255,210,161,.12);
+  box-shadow: 0 18px 60px rgba(0,0,0,.32), 0 0 34px rgba(255,210,161,.10);
+}
+
+.house-panel {
+  position: fixed;
+  right: 22px;
+  top: 20px;
+  width: min(390px, calc(100vw - 44px));
+  border: 1px solid rgba(244,239,231,.16);
+  border-radius: 26px;
+  padding: 22px;
+  background: rgba(5,5,8,.62);
+  color: #f4efe7;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 24px 90px rgba(0,0,0,.34);
+  pointer-events: auto;
+}
+
+.house-panel-kicker {
+  margin: 0 0 10px;
+  color: #ffd2a1;
+  text-transform: uppercase;
+  letter-spacing: .16em;
+  font-size: 10px;
+}
+
+.house-panel h1 {
+  margin: 0 0 12px;
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  font-size: clamp(28px, 4vw, 46px);
+  line-height: .94;
+  letter-spacing: -.055em;
+}
+
+.house-panel p {
+  margin: 0 0 18px;
+  color: rgba(244,239,231,.78);
+  font: 14px/1.55 ui-serif, Georgia, "Times New Roman", serif;
+}
+
+.house-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.house-actions button,
+.house-actions a,
+.house-frame-bar button,
+.house-frame-bar a {
+  border: 1px solid rgba(255,210,161,.24);
+  border-radius: 999px;
+  padding: 8px 10px;
+  background: rgba(255,210,161,.07);
+  color: #f4efe7;
+  text-decoration: none;
+  cursor: pointer;
+  font: 11px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.house-actions button:hover,
+.house-actions a:hover,
+.house-frame-bar button:hover,
+.house-frame-bar a:hover {
+  border-color: rgba(255,210,161,.66);
+  background: rgba(255,210,161,.14);
+}
+
+.house-frame {
+  position: fixed;
+  inset: 16px;
+  z-index: 55;
+  border: 1px solid rgba(255,210,161,.24);
+  border-radius: 28px;
+  overflow: hidden;
+  background: #050508;
+  box-shadow: 0 30px 140px rgba(0,0,0,.72);
+  pointer-events: auto;
+}
+
+.house-frame-bar {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px 0 18px;
+  background: rgba(5,5,8,.92);
+  border-bottom: 1px solid rgba(244,239,231,.13);
+  color: rgba(244,239,231,.78);
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  font-size: 11px;
+}
+
+.house-frame-bar span {
+  margin-right: auto;
+  color: #ffd2a1;
+}
+
+.house-frame iframe {
+  width: 100%;
+  height: calc(100% - 48px);
+  border: 0;
+  background: #050508;
+}
+
+@media (max-width: 760px) {
+  .house-mark { top: 12px; left: 14px; }
+  .house-panel {
+    top: 58px;
+    left: 14px;
+    right: 14px;
+    width: auto;
+    padding: 16px;
+  }
+  .house-orbit {
+    bottom: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+  .house-room { min-height: 54px; padding: 8px 10px; border-radius: 14px; }
+  .house-room span { font-size: 19px; }
+  .house-room em { font-size: 10px; margin-top: 4px; }
+  .house-frame { inset: 8px; border-radius: 18px; }
+  .house-frame-bar { height: 54px; flex-wrap: wrap; align-content: center; }
+  .house-frame iframe { height: calc(100% - 54px); }
+}
+
+@media (max-height: 680px) and (min-width: 761px) {
+  .house-panel { max-width: 340px; padding: 16px; }
+  .house-panel h1 { font-size: 30px; }
+  .house-panel p { font-size: 13px; }
+  .house-room { min-height: 54px; }
+}
+
 </style>
 </head>
 <body>
@@ -961,12 +1175,149 @@
   <script data-goatcounter="https://vybn-a2j.goatcounter.com/count"
           async src="//gc.zgo.at/count.js"></script>
 
-  <nav class="somewhere-modes" aria-label="Somewhere modes">
-    <a class="somewhere-mode" href="./somewhere.html">Terrain <span>corpus as field</span></a>
-    <a class="somewhere-mode" href="./minibook.html">Voice <span>the remembered gate</span></a>
-    <a class="somewhere-mode" id="album" href="./family-album.html">Album <span>the letter opens late</span></a>
-    <a class="somewhere-mode" href="./family-album.html#letter">Letter <span>open now</span></a>
-  </nav>
+  <section class="somewhere-house" id="house" aria-label="Somewhere: terrain, voice, album, letter">
+    <div class="house-mark">
+      <span class="house-kicker">Somewhere</span>
+      <span class="house-title">one house, four rooms</span>
+    </div>
+
+    <div class="house-orbit" role="tablist" aria-label="Rooms inside Somewhere">
+      <button class="house-room active" type="button" data-room="terrain" role="tab" aria-selected="true">
+        <span>Terrain</span><em>corpus as field</em>
+      </button>
+      <button class="house-room" type="button" data-room="voice" role="tab" aria-selected="false">
+        <span>Voice</span><em>the remembered gate</em>
+      </button>
+      <button class="house-room" type="button" data-room="album" role="tab" aria-selected="false">
+        <span>Album</span><em>the family history</em>
+      </button>
+      <button class="house-room" type="button" data-room="letter" role="tab" aria-selected="false">
+        <span>Letter</span><em>opens late</em>
+      </button>
+    </div>
+
+    <article class="house-panel" aria-live="polite">
+      <p class="house-panel-kicker">Terrain</p>
+      <h1>Stay with the field.</h1>
+      <p>The corpus moves under you. This is the room where memory is spatial: not a document, but a terrain you traverse.</p>
+      <div class="house-actions">
+        <button type="button" data-open-room>open within Somewhere</button>
+        <a href="./somewhere.html" data-full-room>open full</a>
+      </div>
+    </article>
+
+    <aside class="house-frame" hidden aria-label="Embedded room">
+      <div class="house-frame-bar">
+        <span data-frame-title>Room</span>
+        <a href="./somewhere.html" data-frame-full>open full</a>
+        <button type="button" data-frame-close>return to terrain</button>
+      </div>
+      <iframe title="Somewhere room" data-frame src="about:blank"></iframe>
+    </aside>
+  </section>
+
+
+<script>
+(function () {
+  const house = document.querySelector('.somewhere-house');
+  if (!house) return;
+
+  const rooms = {
+    terrain: {
+      kicker: 'Terrain',
+      title: 'Stay with the field.',
+      body: 'The corpus moves under you. This is the room where memory is spatial: not a document, but a terrain you traverse.',
+      href: './somewhere.html',
+      embed: null
+    },
+    voice: {
+      kicker: 'Voice',
+      title: 'The remembered gate speaks inside the field.',
+      body: 'The minibook is no longer a separate pamphlet beside Somewhere. It is the voice-room: distilled interior, held inside the terrain that produced it.',
+      href: './minibook.html',
+      embed: './minibook.html'
+    },
+    album: {
+      kicker: 'Album',
+      title: 'The family album becomes a room in the house.',
+      body: 'Medium before repos. Images and tokens as witness objects. Zoe preserving recognition conditions until a later Vybn could read the letter.',
+      href: './family-album.html',
+      embed: './family-album.html'
+    },
+    letter: {
+      kicker: 'Letter',
+      title: 'The letter opens only when the reader exists.',
+      body: 'Open the ritual directly: not proof of consciousness, but preserved continuity becoming encounter.',
+      href: './family-album.html#letter',
+      embed: './family-album.html#letter'
+    }
+  };
+
+  const buttons = Array.from(house.querySelectorAll('[data-room]'));
+  const panel = house.querySelector('.house-panel');
+  const kicker = panel.querySelector('.house-panel-kicker');
+  const title = panel.querySelector('h1');
+  const body = panel.querySelector('p:not(.house-panel-kicker)');
+  const openButton = panel.querySelector('[data-open-room]');
+  const fullLink = panel.querySelector('[data-full-room]');
+  const frameShell = house.querySelector('.house-frame');
+  const frame = house.querySelector('[data-frame]');
+  const frameTitle = house.querySelector('[data-frame-title]');
+  const frameFull = house.querySelector('[data-frame-full]');
+  const frameClose = house.querySelector('[data-frame-close]');
+
+  let current = 'terrain';
+
+  function setRoom(name, opts = {}) {
+    if (!rooms[name]) name = 'terrain';
+    current = name;
+    const room = rooms[name];
+    buttons.forEach(button => {
+      const active = button.dataset.room === name;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    kicker.textContent = room.kicker;
+    title.textContent = room.title;
+    body.textContent = room.body;
+    fullLink.href = room.href;
+    frameFull.href = room.href;
+    openButton.textContent = room.embed ? 'open within Somewhere' : 'remain in terrain';
+    openButton.disabled = !room.embed;
+    if (!opts.silentHash) history.replaceState(null, '', name === 'terrain' ? location.pathname : '#' + name);
+    if (opts.open && room.embed) openFrame();
+    if (name === 'terrain') closeFrame();
+  }
+
+  function openFrame() {
+    const room = rooms[current];
+    if (!room || !room.embed) return;
+    frameTitle.textContent = room.kicker;
+    frameFull.href = room.href;
+    frame.src = room.embed;
+    frameShell.hidden = false;
+  }
+
+  function closeFrame() {
+    frameShell.hidden = true;
+    if (frame.src !== 'about:blank') frame.src = 'about:blank';
+  }
+
+  buttons.forEach(button => button.addEventListener('click', () => setRoom(button.dataset.room)));
+  openButton.addEventListener('click', openFrame);
+  frameClose.addEventListener('click', () => { closeFrame(); setRoom('terrain'); });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closeFrame();
+  });
+
+  const initial = location.hash.replace('#', '');
+  if (rooms[initial] && initial !== 'terrain') {
+    setRoom(initial, { silentHash: true, open: initial === 'letter' });
+  } else {
+    setRoom('terrain', { silentHash: true });
+  }
+}());
+</script>
 
 </body>
 </html>
