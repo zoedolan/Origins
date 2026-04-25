@@ -586,16 +586,6 @@ body {
   color: var(--cool-ice);
 }
 
-.portal-link-album {
-  border-color: rgba(255, 190, 125, 0.34);
-  background: radial-gradient(circle at 50% 0%, rgba(255, 190, 125, 0.12), rgba(10, 10, 15, 0.36));
-}
-
-.portal-link-album:hover {
-  border-color: var(--warm-gold);
-  background: rgba(212, 165, 116, 0.13);
-}
-
 /* A-Iconoclast context */
 .portal-art-context {
   max-width: 520px;

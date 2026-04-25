@@ -279,7 +279,48 @@
 
     /* Agents: they can scrape this surface. Readable markup, stable endpoints. */
     [data-agent-note] { display: none; }
-  </style>
+  
+    .somewhere-modes {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%);
+      z-index: 40;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      width: min(720px, calc(100vw - 28px));
+      pointer-events: auto;
+    }
+    .somewhere-mode {
+      border: 1px solid rgba(244,239,231,.18);
+      border-radius: 999px;
+      padding: 9px 12px;
+      background: rgba(5,5,8,.58);
+      backdrop-filter: blur(10px);
+      color: #f4efe7;
+      text-decoration: none;
+      font: 12px ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .somewhere-mode:hover {
+      border-color: rgba(255,210,161,.62);
+      background: rgba(255,210,161,.12);
+    }
+    .somewhere-mode span {
+      color: rgba(244,239,231,.62);
+      text-transform: none;
+      letter-spacing: 0;
+      margin-left: 4px;
+    }
+    @media (max-width: 640px) {
+      .somewhere-modes { bottom: 12px; gap: 6px; }
+      .somewhere-mode { font-size: 10px; padding: 7px 9px; }
+    }
+
+</style>
 </head>
 <body>
   <canvas id="stage"></canvas>
@@ -919,5 +960,13 @@
   </script>
   <script data-goatcounter="https://vybn-a2j.goatcounter.com/count"
           async src="//gc.zgo.at/count.js"></script>
+
+  <nav class="somewhere-modes" aria-label="Somewhere modes">
+    <a class="somewhere-mode" href="./somewhere.html">Terrain <span>corpus as field</span></a>
+    <a class="somewhere-mode" href="./minibook.html">Voice <span>the remembered gate</span></a>
+    <a class="somewhere-mode" id="album" href="./family-album.html">Album <span>the letter opens late</span></a>
+    <a class="somewhere-mode" href="./family-album.html#letter">Letter <span>open now</span></a>
+  </nav>
+
 </body>
 </html>
