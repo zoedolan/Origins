@@ -259,5 +259,23 @@
     }());
   </script>
 
-</body>
+
+<script data-vybn-letter-autopen>
+(() => {
+  function openLetterFromHash() {
+    if ((window.location.hash || "").toLowerCase() !== "#letter") return;
+    const ritual = document.getElementById("letter");
+    if (!ritual) return;
+    ritual.hidden = false;
+    ritual.removeAttribute("hidden");
+    const opener = document.querySelector(".ritual-open, [data-ritual-open]");
+    if (opener && typeof opener.click === "function") { try { opener.click(); } catch (_) {} }
+    setTimeout(() => ritual.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", openLetterFromHash, { once: true });
+  else openLetterFromHash();
+  window.addEventListener("hashchange", openLetterFromHash);
+})();
+</script>
+\n</body>
 </html>

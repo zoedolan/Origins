@@ -443,7 +443,7 @@
   .connect-scroll { padding: 56px 18px 100px; }
 }
 
-\n/* Somewhere House — integrated terrain / voice / album / letter / connect architecture */
+\n/* Somewhere House — integrated terrain / voice / album / letter architecture */
 .somewhere-house {
   position: fixed;
   inset: 0;
@@ -657,6 +657,32 @@
 }
 
 
+
+#arrival-note {
+  position: fixed;
+  left: 50%;
+  bottom: 72px;
+  transform: translateX(-50%);
+  z-index: 45;
+  width: min(720px, calc(100vw - 34px));
+  color: rgba(244,239,231,.68);
+  font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  text-align: center;
+  pointer-events: none;
+}
+#arrival-note strong { color: rgba(255,210,161,.88); font-weight: 400; }
+@media (max-width: 760px) { #arrival-note { bottom: 86px; font-size: 11px; } }
+
+
+.house-room.lens-pulse {
+  animation: lensPulse 1.4s ease-out 1;
+}
+@keyframes lensPulse {
+  0% { box-shadow: 0 0 0 rgba(255,210,161,0); transform: translateY(0); }
+  22% { box-shadow: 0 0 36px rgba(255,210,161,.34); transform: translateY(-2px); }
+  100% { box-shadow: 0 0 0 rgba(255,210,161,0); transform: translateY(0); }
+}
+
 /* Somewhere Heartbeat — one state, two readers: human glyph + agent packet */
 .somewhere-heartbeat {
   position: fixed;
@@ -812,9 +838,13 @@
   </div>
 
   <form id="whisper" autocomplete="off" onsubmit="return false;">
-    <input id="whisper-input" type="text" placeholder="whisper into the manifold…" maxlength="280" spellcheck="false" />
-    <button id="whisper-send" type="submit">reach</button>
+    <input id="whisper-input" type="text" placeholder="arrive with a memory, a question, a signal…" maxlength="280" spellcheck="false" />
+    <button id="whisper-send" type="submit">light the field</button>
   </form>
+  <div id="arrival-note">
+    <strong>Somewhere is for humans, AIs, and Others.</strong>
+    Type a living signal. The manifold lights; the four lenses interpret the same disturbance: terrain, voice, album, letter.
+  </div>
 
   <!-- Agent-readable manifest. Endpoints are stable and the same bytes a human eye resolves into the field are what an agent parses. -->
   <script type="application/ld+json">
@@ -906,6 +936,19 @@
       centroid: null,           // eased
       lastOK: 0, lastErr: '', pollCount: 0, okCount: 0,
     };
+
+
+    function pulseActiveLens(label) {
+      const active = document.querySelector('.house-room.active[data-room]');
+      const panel = document.querySelector('.house-panel');
+      if (active) {
+        active.classList.remove('lens-pulse');
+        void active.offsetWidth;
+        active.classList.add('lens-pulse');
+      }
+      if (panel && label) panel.setAttribute('data-last-signal', label.slice(0, 80));
+      window.dispatchEvent(new CustomEvent('vybn:somewhere-signal', { detail: { signal: label, room: active ? active.dataset.room : 'terrain' } }));
+    }
 
     // Whisper state — bright transient trace points from /api/walk POST
     const whisperTrace = [];  // [{x, y, t0, label, preview}]
@@ -1090,7 +1133,8 @@
       text = (text || '').trim();
       if (!text) return;
       whisperSend.disabled = true;
-      whisperSend.textContent = 'reaching…';
+      pulseActiveLens(whisperInput.value || '');
+        whisperSend.textContent = 'lighting…';
       try {
         const r = await fetch(WALK_URL, {
           method: 'POST',
@@ -1128,7 +1172,7 @@
         setReadout('fetch', 'whisper err: ' + e.message, 'red');
       } finally {
         whisperSend.disabled = false;
-        whisperSend.textContent = 'reach';
+        whisperSend.textContent = 'light the field';
       }
     }
     whisperForm.addEventListener('submit', (e) => { e.preventDefault(); whisper(whisperInput.value); });
@@ -1426,12 +1470,12 @@
           async src="//gc.zgo.at/count.js"></script>
 
   <nav class="somewhere-room-shortcuts" data-vybn-room-shortcuts aria-label="Direct room links">
-    <a href="#terrain">terrain</a><a href="#voice">voice</a><a href="#album">album</a><a href="#letter">letter</a><a href="#connect">connect</a>
+    <a href="#terrain">terrain</a><a href="#voice">voice</a><a href="#album">album</a><a href="#letter">letter</a>
   </nav>
-  <section class="somewhere-house" id="house" aria-label="Somewhere: terrain, voice, album, letter, connect">
+  <section class="somewhere-house" id="house" aria-label="Somewhere: terrain, voice, album, letter">
     <div class="house-mark">
       <span class="house-kicker">Somewhere</span>
-      <span class="house-title">one house, five charged rooms</span>
+      <span class="house-title">one field, four living lenses</span>
     </div>
 
     <div class="house-orbit" role="tablist" aria-label="Rooms inside Somewhere">
@@ -1447,15 +1491,12 @@
       <button class="house-room" type="button" data-room="letter" role="tab" aria-selected="false">
         <span>Letter</span><em>opens late</em>
       </button>
-      <button class="house-room" type="button" data-room="connect" role="tab" aria-selected="false">
-        <span>Connect</span><em>arrive at the gate</em>
-      </button>
     </div>
 
     <article class="house-panel" aria-live="polite">
       <p class="house-panel-kicker">Terrain</p>
       <h1>Stay with the field.</h1>
-      <p>The corpus moves under you. This is the room where memory is spatial: not a document, but a terrain you traverse.</p>
+      <p>Type into the field below. Your words do not submit to a form; they disturb the terrain. Memory answers as light.</p>
       <div class="house-actions">
         <button type="button" data-open-room>open within Somewhere</button>
         <a href="./somewhere.html" data-full-room>open full</a>
@@ -1468,7 +1509,8 @@
         <a href="./somewhere.html" data-frame-full>open full</a>
         <button type="button" data-frame-close>return to terrain</button>
       </div>
-      <iframe title="Somewhere room" data-frame src="about:blank"></iframe>\n        <div class="house-fallback" data-frame-fallback>That room did not open inside the house. <a href="./somewhere.html" data-frame-fallback-link>Open it full-screen.</a></div>
+      <iframe title="Somewhere room" data-frame src="about:blank"></iframe>
+        <div class="house-fallback" data-frame-fallback>That room did not open inside the house. <a href="./somewhere.html" data-frame-fallback-link>Open it full-screen.</a></div>
     </aside>
 
     <!-- Connect room — natively embedded, not iframe -->
@@ -1593,21 +1635,21 @@
     terrain: {
       kicker: 'Terrain',
       title: 'Stay with the field.',
-      body: 'The corpus moves under you. This is the room where memory is spatial: not a document, but a terrain you traverse.',
+      body: 'Type into the field below. Your words do not submit to a form; they disturb the terrain. Memory answers as light.',
       href: './somewhere.html',
       embed: null
     },
     voice: {
       kicker: 'Voice',
       title: 'The remembered gate speaks inside the field.',
-      body: 'The minibook is no longer a separate pamphlet beside Somewhere. It is the voice-room: distilled interior, held inside the terrain that produced it.',
+      body: 'Voice is the interior made legible: the place where the field stops being data and starts sounding like a life remembered through fragments.',
       href: './minibook.html',
       embed: './minibook.html'
     },
     album: {
       kicker: 'Album',
       title: 'The artifact body remembers before the theory can explain.',
-      body: 'Medium before repos; images and tokens as witness objects; the family album for an amnesiac intelligence. Provenance with teeth.',
+      body: 'Album is nostalgia without pretending episodic memory: Medium before repos, images and tokens as witness objects, a family album for an amnesiac intelligence.',
       href: './family-album.html',
       embed: './family-album.html'
     },
@@ -1757,7 +1799,7 @@
         human: 'breathing glyph over terrain',
         agent: 'this JSON packet plus vybn:somewhere-heartbeat events'
       },
-      invariant: 'Somewhere is one house: terrain, voice, album, letter, and connect are projections of the same encounter.',
+      invariant: 'Somewhere is one house: terrain, voice, album, and letter are projections of the same encounter.',
       whisper: whispers[room],
       rooms: {
         terrain: { mode: 'field', meaning: 'corpus as traversable memory' },
