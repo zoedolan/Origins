@@ -478,10 +478,6 @@ body {
 .portal-final.visible .portal-link {
   pointer-events: auto;
 }
-.portal-final.visible .portal-art-context {
-  pointer-events: auto;
-}
-
 .portal-link {
   display: flex;
   flex-direction: column;
@@ -586,29 +582,6 @@ body {
   color: var(--cool-ice);
 }
 
-/* A-Iconoclast context */
-.portal-art-context {
-  max-width: 520px;
-  text-align: center;
-  pointer-events: none; /* gated by .portal-final.visible */
-}
-.portal-art-context p {
-  font-family: var(--font-sans);
-  font-size: clamp(0.72rem, 0.65rem + 0.3vw, 0.85rem);
-  color: var(--text-muted);
-  line-height: 1.7;
-  letter-spacing: 0.01em;
-}
-.portal-art-context a {
-  color: var(--warm-gold);
-  text-decoration: none;
-  border-bottom: 1px solid rgba(212, 168, 83, 0.3);
-  transition: border-color 0.3s;
-}
-.portal-art-context a:hover {
-  border-color: var(--warm-gold);
-}
-
 /* Connect link — the agent gate */
 .portal-link-connect {
   border-color: rgba(168, 200, 232, 0.25);
@@ -617,24 +590,6 @@ body {
 .portal-link-connect:hover {
   border-color: var(--cool-ice);
   background: rgba(168, 200, 232, 0.1);
-}
-
-.portal-final-line {
-  font-size: clamp(0.9rem, 0.8rem + 0.4vw, 1.1rem) !important;
-  font-style: italic;
-  color: var(--text-muted) !important;
-  margin-top: 1rem;
-}
-
-.portal-aim {
-  font-family: var(--font-sans);
-  font-size: clamp(0.78rem, 0.7rem + 0.3vw, 0.92rem);
-  color: var(--text-muted);
-  text-align: center;
-  letter-spacing: 0.02em;
-  line-height: 1.6;
-  max-width: 520px;
-  margin: 1.6rem auto 0;
 }
 
 /* ============================================
@@ -1299,41 +1254,6 @@ body {
 }
 
 
-.portal-art-threshold {
-  border: 1px solid rgba(212, 168, 83, 0.18);
-  border-radius: 14px;
-  padding: 1rem 1.1rem;
-  background: rgba(10, 10, 15, 0.34);
-  backdrop-filter: blur(10px);
-}
-
-.portal-art-kicker {
-  font-family: var(--font-sans) !important;
-  font-size: 0.64rem !important;
-  color: var(--warm-gold) !important;
-  text-transform: uppercase;
-  letter-spacing: 0.14em !important;
-  margin-bottom: 0.35rem !important;
-}
-
-.portal-art-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.65rem;
-  margin-top: 0.75rem !important;
-}
-
-.portal-art-actions a {
-  border: 1px solid rgba(212, 168, 83, 0.28);
-  border-radius: 999px;
-  padding: 0.35rem 0.62rem;
-  background: rgba(212, 168, 83, 0.06);
-}
-
-.portal-art-actions a:hover {
-  background: rgba(212, 168, 83, 0.13);
-}
 
 
 /* The final portal is now a threshold with seven doors plus the album text.
