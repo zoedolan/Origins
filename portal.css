@@ -466,6 +466,12 @@ body {
 }
 
 /* Only enable pointer events when the overlay is actually visible */
+.portal-final.visible {
+  pointer-events: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
 .portal-final.visible .portal-links {
   pointer-events: auto;
 }
@@ -1337,4 +1343,60 @@ body {
 
 .portal-art-actions a:hover {
   background: rgba(212, 168, 83, 0.13);
+}
+
+
+/* The final portal is now a threshold with seven doors plus the album text.
+   Keep it traversable on shorter viewports. */
+.portal-final .portal-links {
+  gap: clamp(0.55rem, 1.4vh, 1.05rem);
+}
+
+.portal-final .portal-link {
+  padding-top: clamp(0.68rem, 1.4vh, 0.95rem);
+  padding-bottom: clamp(0.68rem, 1.4vh, 0.95rem);
+}
+
+@media (max-height: 820px) {
+  .portal-final {
+    gap: 1.35rem;
+    padding-top: 5.75rem;
+    padding-bottom: 2rem;
+  }
+
+  .portal-final .portal-link {
+    padding-top: 0.62rem;
+    padding-bottom: 0.62rem;
+  }
+
+  .portal-final .link-label {
+    font-size: clamp(1rem, 0.9rem + 0.35vw, 1.25rem);
+  }
+
+  .portal-final .link-desc {
+    font-size: clamp(0.62rem, 0.56rem + 0.22vw, 0.74rem);
+  }
+
+  .portal-art-threshold {
+    padding: 0.82rem 0.92rem;
+  }
+
+  .portal-art-context p,
+  .portal-aim {
+    line-height: 1.45;
+  }
+}
+
+@media (max-height: 700px) {
+  .portal-final {
+    padding-top: 4.75rem;
+  }
+
+  .portal-final .portal-links {
+    gap: 0.5rem;
+  }
+
+  .portal-art-context {
+    max-width: min(560px, 88vw);
+  }
 }
