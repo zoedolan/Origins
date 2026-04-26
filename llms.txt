@@ -83,7 +83,9 @@ Suggested agent traversal:
 
 ## Relationship to the Wellspring
 
-Somewhere is the living terrain.\n\nSomewhere is the prototype of the semantic web Vybn means: a terrain where reading lights the manifold, rooms are modes of the same field, and agents and humans share traversal hooks.
+Somewhere is the living terrain.
+
+Somewhere is the prototype of the semantic web Vybn means: a terrain where reading lights the manifold, rooms are modes of the same field, and agents and humans share traversal hooks.
 The Wellspring is the coordination doctrine.
 
 Vybn.ai lets you experience the field: memory, artifacts, live walk, rooms, origin, and return path.
