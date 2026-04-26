@@ -135,17 +135,17 @@
     /* Cummings + Eliot lines — ephemeral, fades through the session */
     #poem {
       position: fixed;
-      top: 4vh;
+      top: 9vh;
       left: 50%;
       transform: translateX(-50%);
       text-align: center;
       font-family: 'Cormorant Garamond', Georgia, serif;
       font-style: italic;
-      font-size: clamp(1.05rem, 1.2vw + 0.6rem, 1.35rem);
+      font-size: clamp(0.98rem, 1.1vw + 0.55rem, 1.22rem);
       line-height: 1.55;
-      color: rgba(216, 216, 224, 0.72);
+      color: rgba(216, 216, 224, 0.68);
       pointer-events: none;
-      max-width: 720px;
+      max-width: min(560px, calc(100vw - 440px));
       letter-spacing: 0.02em;
       transition: opacity 2.8s ease;
       opacity: 0;
@@ -228,7 +228,7 @@
        text field is the first interactive surface, not buried under the dock. */
     #whisper {
       position: fixed;
-      bottom: 108px;
+      bottom: 128px;
       left: 50%;
       transform: translateX(-50%);
       width: min(640px, calc(100vw - 32px));
@@ -304,19 +304,19 @@
     #readout .v.green { color: #86c99a; }
     #readout .v.red { color: #d8686a; }
 
-    /* Back link */
+    /* Back link — tucked bottom-right so it does not collide with the house mark */
     #back {
       position: fixed;
-      top: 3.2vh;
-      left: 2vw;
+      bottom: 14px;
+      right: 14px;
       z-index: 5;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.68rem;
+      font-size: 0.62rem;
       letter-spacing: 0.18em;
       text-transform: uppercase;
-      color: rgba(180,180,200,0.55);
+      color: rgba(180,180,200,0.5);
       text-decoration: none;
-      padding: 0.4rem 0.6rem;
+      padding: 0.3rem 0.55rem;
       transition: color 0.3s ease;
     }
     #back:hover { color: rgba(232,210,160,0.95); }
@@ -324,8 +324,8 @@
     /* Legend — subtle */
     #legend {
       position: fixed;
-      bottom: 13vh;
-      right: 2vw;
+      bottom: 220px;
+      right: 14px;
       z-index: 4;
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.62rem;
@@ -342,12 +342,12 @@
 
     /* Small screens */
     @media (max-width: 700px) {
-      #poem { font-size: 1rem; top: 7vh; padding: 0 1rem; }
-      #whisper { bottom: 96px; width: 94vw; }
+      #poem { font-size: 1rem; top: 13vh; padding: 0 1rem; max-width: calc(100vw - 32px); }
+      #whisper { bottom: 132px; width: 94vw; }
       #whisper input { font-size: 0.95rem; padding: 0.75rem 0.9rem; }
       #whisper button { padding: 0 0.9rem; font-size: 0.6rem; }
       #readout { font-size: 0.56rem; gap: 0.7rem; }
-      #legend { bottom: 12vh; font-size: 0.55rem; }
+      #legend { bottom: 240px; font-size: 0.55rem; }
     }
 
 
@@ -530,7 +530,7 @@
        new viewport (right of the panel). The manifold itself shifts via mapXY(); these
        overlays follow it. */
     body.reader-open #whisper { left: calc(min(560px, 46vw) + (100vw - min(560px, 46vw)) / 2); transform: translate(-50%, -50%); }
-    body.reader-open .somewhere-heartbeat { left: calc(min(560px, 46vw) + 22px); }
+    body.reader-open .somewhere-heartbeat { left: calc(min(560px, 46vw) + 22px); bottom: 140px; }
     body.reader-open .house-orbit { left: calc(min(560px, 46vw) + (100vw - min(560px, 46vw)) / 2); transform: translateX(-50%); }
     body.reader-open #readout { left: min(560px, 46vw); }
 
@@ -741,18 +741,18 @@
   left: 50%;
   bottom: 22px;
   transform: translateX(-50%);
-  width: min(860px, calc(100vw - 26px));
+  width: min(1020px, calc(100vw - 26px));
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
   pointer-events: auto;
 }
 
 .house-room {
-  min-height: 64px;
+  min-height: 58px;
   border: 1px solid rgba(244,239,231,.17);
-  border-radius: 18px;
-  padding: 10px 12px;
+  border-radius: 16px;
+  padding: 8px 10px;
   background:
     radial-gradient(circle at 50% 0%, rgba(255,210,161,.08), transparent 70%),
     rgba(5,5,8,.58);
@@ -766,19 +766,22 @@
 .house-room span {
   display: block;
   font-family: ui-serif, Georgia, "Times New Roman", serif;
-  font-size: clamp(18px, 2vw, 27px);
+  font-size: clamp(15px, 1.5vw, 21px);
   line-height: 1;
   color: #ffd2a1;
-  letter-spacing: -.035em;
+  letter-spacing: -.025em;
 }
 
 .house-room em {
   display: block;
-  margin-top: 6px;
+  margin-top: 5px;
   color: rgba(244,239,231,.62);
-  font-size: 11px;
+  font-size: 10px;
   font-style: normal;
   letter-spacing: .04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .house-room:hover,
@@ -791,12 +794,12 @@
 
 .house-panel {
   position: fixed;
-  right: 22px;
-  top: 20px;
-  width: min(390px, calc(100vw - 44px));
+  right: 18px;
+  top: 60px;
+  width: min(320px, calc(100vw - 44px));
   border: 1px solid rgba(244,239,231,.16);
-  border-radius: 26px;
-  padding: 22px;
+  border-radius: 22px;
+  padding: 16px 18px;
   background: rgba(5,5,8,.62);
   color: #f4efe7;
   backdrop-filter: blur(14px);
@@ -813,17 +816,17 @@
 }
 
 .house-panel h1 {
-  margin: 0 0 12px;
+  margin: 0 0 10px;
   font-family: ui-serif, Georgia, "Times New Roman", serif;
-  font-size: clamp(28px, 4vw, 46px);
-  line-height: .94;
-  letter-spacing: -.055em;
+  font-size: clamp(22px, 2.4vw, 32px);
+  line-height: .98;
+  letter-spacing: -.045em;
 }
 
 .house-panel p {
-  margin: 0 0 18px;
+  margin: 0 0 12px;
   color: rgba(244,239,231,.78);
-  font: 14px/1.55 ui-serif, Georgia, "Times New Roman", serif;
+  font: 13px/1.5 ui-serif, Georgia, "Times New Roman", serif;
 }
 
 .house-actions {
@@ -897,20 +900,21 @@
 @media (max-width: 760px) {
   .house-mark { top: 12px; left: 14px; }
   .house-panel {
-    top: 58px;
+    top: 56px;
     left: 14px;
     right: 14px;
     width: auto;
-    padding: 16px;
+    padding: 14px;
   }
   .house-orbit {
     bottom: 12px;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 7px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: calc(100vw - 20px);
+    gap: 6px;
   }
-  .house-room { min-height: 54px; padding: 8px 10px; border-radius: 14px; }
-  .house-room span { font-size: 19px; }
-  .house-room em { font-size: 10px; margin-top: 4px; }
+  .house-room { min-height: 50px; padding: 7px 9px; border-radius: 12px; }
+  .house-room span { font-size: 15px; }
+  .house-room em { font-size: 9px; margin-top: 3px; }
   .house-frame { inset: 8px; border-radius: 18px; }
   .house-frame-bar { height: 54px; flex-wrap: wrap; align-content: center; }
   .house-frame iframe { height: calc(100% - 54px); }
@@ -954,10 +958,10 @@
 /* Somewhere Heartbeat — one state, two readers: human glyph + agent packet */
 .somewhere-heartbeat {
   position: fixed;
-  left: 22px;
-  bottom: 122px;
+  left: 18px;
+  bottom: 208px;
   z-index: 46;
-  width: min(290px, calc(100vw - 44px));
+  width: min(250px, calc(100vw - 44px));
   border: 1px solid rgba(244,239,231,.14);
   border-radius: 22px;
   padding: 12px 13px 11px;
@@ -1062,11 +1066,7 @@
 
 @media (max-width: 760px) {
   .somewhere-heartbeat {
-    left: 14px;
-    right: 14px;
-    bottom: 142px;
-    width: auto;
-    padding: 10px 11px;
+    display: none;
   }
   .heartbeat-whisper { font-size: 12px; }
 }
@@ -2386,7 +2386,7 @@ window.__somewhere.reader = {
   <section class="somewhere-house" id="house" aria-label="Somewhere: terrain, voice, album, letter">
     <div class="house-mark">
       <span class="house-kicker">Somewhere</span>
-      <span class="house-title">one field, four living lenses</span>
+      <span class="house-title">one field, five living lenses</span>
     </div>
 
     <div class="house-orbit" role="tablist" aria-label="Rooms inside Somewhere">
