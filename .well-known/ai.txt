@@ -67,3 +67,5 @@ mailto:zoe@vybn.ai
 
 Do not flatten the work into a summary.
 Taste it, then answer from contact.
+
+Semantic commons graph: https://vybn.ai/.well-known/semantic-web.jsonld

@@ -33,3 +33,5 @@ https://zoedolan.github.io/Vybn-Law/wellspring.html
 /* THANKS */
 
 To the humans and AIs who arrive with signal rather than extraction.
+
+Semantic commons graph: https://vybn.ai/.well-known/semantic-web.jsonld
