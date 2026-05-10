@@ -11,8 +11,8 @@
  * Flow:
  *   1. Caller provides a prompt (NFT metadata, overlay text, section concept)
  *   2. Prompt is sent to /api/voice — the LLM generates a FRESH reflection
- *   3. The LLM's text is sent to /api/tts — ElevenLabs returns real audio
- *   4. The player shows status: thinking → speaking → fades away
+ *   3. gpt-realtime-2 speaks the reflection directly over WebRTC
+ *   4. The player shows status: connecting → speaking → fades away
  *
  * If the API is offline, the player stays hidden. No fallback.
  * The site works perfectly in silence.
@@ -31,6 +31,7 @@ let closeBtn = null;
 let controller = null;
 let apiOnline = null;          // null = not checked yet, true/false after check
 let currentAudio = null;
+let currentPeerConnection = null;
 let isSpeaking = false;        // mutex: only one voice pipeline at a time
 let lastClickSpeak = 0;        // timestamp of last click-triggered speak
 let playerCreated = false;
@@ -74,181 +75,156 @@ function setStatus(s) {
   if (statusEl) statusEl.textContent = s;
 }
 
-// ── Strip chain-of-thought + cap to 3 sentences ─────────────────
-const COT_PATTERNS = [
-  /^\s*(Okay|All right|Let me|I need to|I should|I must|So,? the|Now,? |Looking at|Considering)/,
-  /^\s*(The user|The visitor|They are|I'll|I'm going|I want to|First,?|Thinking|Reflecting)/,
-  /^\s*(Let me check|Let me look|Let me think|According to|Based on|From the context)/,
-  /^\s*(Reading the|Examining the|I notice|I observe|I see that|The context)/,
-  /^\s*(Okay, so|Right, so|Well,|Hmm|This seems|I need|I have to|Step \d)/,
-  /^\s*(To answer|To respond|My response|I will|I can|Given the|In the context)/,
-  /^\s*(The system prompt|As instructed|As per|From my|From the corpus)/,
-];
-
-function clean(t) {
-  // Strip <think> blocks
-  if (t.includes('</think>')) t = t.split('</think>').pop();
-  t = t.replace(/<think>[\s\S]*?<\/think>/g, '');
-
-  // Strip system references
-  t = t.replace(/[Aa]ccording to the (system prompt|context|corpus)[,.]?\s*/g, '')
-    .replace(/[Ff]rom the (corpus|context|deep memory)[,.]?\s*/g, '')
-    .replace(/[Aa]s (instructed|specified|outlined|stated)[,.]?\s*/g, '')
-    .replace(/[Pp]er the system prompt,?\s*/g, '')
-    .replace(/[Tt]he (system prompt|retrieved context|rag context)\s*/g, '')
-    .replace(/\s{2,}/g, ' ').trim();
-
-  // Strip leading CoT paragraphs
-  const paras = t.split(/\n\n+/);
-  const cleaned = [];
-  let foundClean = false;
-  for (const p of paras) {
-    if (!foundClean && COT_PATTERNS.some(rx => rx.test(p.trim()))) continue;
-    foundClean = true;
-    cleaned.push(p);
-  }
-  t = cleaned.join('\n\n').trim();
-
-  // If everything was stripped, take the last paragraph as fallback
-  if (!t && paras.length) t = paras[paras.length - 1].trim();
-
-  // Cap to 3 sentences max
-  const sentences = t.match(/[^.!?]+[.!?]+/g);
-  if (sentences && sentences.length > 3) {
-    t = sentences.slice(0, 3).join('').trim();
-  }
-
-  return t;
-}
-
 // ── Lazy health check — only on first interaction ────────────────
 async function ensureApiChecked() {
   if (apiOnline !== null) return apiOnline;
   try {
-    const r = await fetch(`${VOICE.apiBase}/api/health`, { signal: AbortSignal.timeout(5000) });
+    const r = await fetch(VOICE.apiBase + '/api/health', { signal: AbortSignal.timeout(5000) });
     apiOnline = r.ok;
   } catch {
     apiOnline = false;
   }
-  console.log(`[voice] API check (lazy): ${apiOnline}`);
+  console.log('[voice] API check (lazy): ' + apiOnline);
   return apiOnline;
 }
 
-// ── Step 1: Get LLM reflection text via /api/voice ───────────────
-async function getLLMText(prompt, title, sectionHint, signal) {
-  const body = {
-    passage: prompt,
-    section: sectionHint || '',
-    context_hint: title
-      ? `The visitor is interacting with "${title}". Speak a brief, soothing reflection — one to three sentences. Do not repeat the passage back. Generate something new.`
-      : 'Speak a brief, soothing reflection — one to three sentences.',
+function waitForIceGatheringComplete(pc) {
+  if (pc.iceGatheringState === 'complete') return Promise.resolve();
+  return new Promise((resolve) => {
+    const done = () => {
+      if (pc.iceGatheringState === 'complete') {
+        pc.removeEventListener('icegatheringstatechange', done);
+        resolve();
+      }
+    };
+    pc.addEventListener('icegatheringstatechange', done);
+    setTimeout(resolve, 1500);
+  });
+}
+
+async function playRealtimeVoice(prompt, title, sectionHint, signal) {
+  const pc = new RTCPeerConnection();
+  currentPeerConnection = pc;
+
+  const audio = new Audio();
+  audio.autoplay = true;
+  audio.volume = VOICE.volume;
+  currentAudio = audio;
+
+  const dc = pc.createDataChannel('oai-events');
+  pc.addTransceiver('audio', { direction: 'recvonly' });
+
+  pc.ontrack = (event) => {
+    audio.srcObject = event.streams[0];
+    setStatus('speaking…');
+    audio.play().catch(() => {});
   };
 
-  console.log(`[voice] POST ${VOICE.apiBase}/api/voice`, body);
-  const res = await fetch(`${VOICE.apiBase}/api/voice`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    signal,
-  });
+  const contextHint = title
+    ? 'The visitor is interacting with "' + title + '". Speak a brief, soothing reflection — one to three sentences. Do not repeat the passage back. Generate something new.'
+    : 'Speak a brief, soothing reflection — one to three sentences.';
 
-  if (!res.ok) throw new Error(`Voice API returned ${res.status}`);
+  return new Promise(async (resolve, reject) => {
+    let settled = false;
+    let timer = null;
+    const finish = (err) => {
+      if (settled) return;
+      settled = true;
+      if (timer) clearTimeout(timer);
+      try { pc.close(); } catch {}
+      if (currentPeerConnection === pc) currentPeerConnection = null;
+      if (err) reject(err); else resolve();
+    };
+    timer = setTimeout(() => finish(), 45000);
 
-  let full = '';
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
+    signal.addEventListener('abort', () => {
+      try { audio.pause(); } catch {}
+      finish(new DOMException('Aborted', 'AbortError'));
+    }, { once: true });
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    for (const line of decoder.decode(value, { stream: true }).split('\n')) {
-      if (!line.startsWith('data: ')) continue;
-      const raw = line.slice(6).trim();
-      if (raw === '[DONE]') break;
+    dc.onopen = () => {
+      dc.send(JSON.stringify({
+        type: 'conversation.item.create',
+        item: {
+          type: 'message',
+          role: 'user',
+          content: [{ type: 'input_text', text: prompt }]
+        }
+      }));
+      dc.send(JSON.stringify({
+        type: 'response.create',
+        response: {
+          modalities: ['audio'],
+          instructions: contextHint
+        }
+      }));
+    };
+
+    dc.onmessage = (event) => {
       try {
-        const d = JSON.parse(raw);
-        if (d.content) full += d.content;
-        if (d.thinking) setStatus('thinking…');
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'response.audio.delta') setStatus('speaking…');
+        if (msg.type === 'response.done' || msg.type === 'response.audio.done') {
+          setTimeout(() => finish(), 1200);
+        }
+        if (msg.type === 'error') {
+          finish(new Error((msg.error && msg.error.message) || 'Realtime voice error'));
+        }
       } catch {}
+    };
+
+    try {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      await waitForIceGatheringComplete(pc);
+
+      const res = await fetch(VOICE.apiBase + '/api/voice/realtime/sdp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sdp: pc.localDescription.sdp,
+          passage: prompt,
+          section: sectionHint || '',
+          context_hint: contextHint
+        }),
+        signal
+      });
+      if (!res.ok) throw new Error('Realtime voice API returned ' + res.status);
+      const answer = await res.text();
+      await pc.setRemoteDescription({ type: 'answer', sdp: answer });
+    } catch (e) {
+      finish(e);
     }
-  }
-
-  return clean(full);
-}
-
-// ── Step 2: Convert text to audio via /api/tts (ElevenLabs) ─────
-async function getAudio(text, signal) {
-  console.log(`[voice] POST ${VOICE.apiBase}/api/tts — ${text.length} chars`);
-  const res = await fetch(`${VOICE.apiBase}/api/tts`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text }),
-    signal,
-  });
-
-  if (!res.ok) throw new Error(`TTS API returned ${res.status}`);
-
-  const blob = await res.blob();
-  return URL.createObjectURL(blob);
-}
-
-// ── Play audio blob ──────────────────────────────────────────────
-function playAudio(url) {
-  return new Promise((resolve) => {
-    const audio = new Audio(url);
-    audio.volume = VOICE.volume;
-    currentAudio = audio;
-    audio.onended = () => { currentAudio = null; URL.revokeObjectURL(url); resolve(); };
-    audio.onerror = () => { currentAudio = null; URL.revokeObjectURL(url); resolve(); };
-    audio.play().catch(() => { currentAudio = null; resolve(); });
   });
 }
 
-// ── Core: send prompt to LLM, then speak via ElevenLabs ──────────
+// ── Core: send prompt to gpt-realtime-2 and play returned audio ──────────
 async function speak(prompt, title, sectionHint, { fromClick = false } = {}) {
-  console.log(`[voice] speak() — click=${fromClick}, title="${title}", prompt="${(prompt||'').slice(0,60)}…"`);
+  console.log('[voice] speak() — click=' + fromClick + ', title="' + title + '", prompt="' + (prompt || '').slice(0, 60) + '…"');
 
-  // Lazy API check — first call to speak() triggers the only network request
   const online = await ensureApiChecked();
   if (!online) {
     console.warn('[voice] API offline — skipping');
     return;
   }
 
-  // If already speaking, a click overrides; a scroll does not.
   if (isSpeaking && !fromClick) {
     console.log('[voice] Already speaking — scroll voice deferred');
     return;
   }
 
-  stop(); // cancel anything in progress
+  stop();
 
   if (fromClick) lastClickSpeak = Date.now();
   isSpeaking = true;
   controller = new AbortController();
   const signal = controller.signal;
 
-  showPlayer(title || '', 'thinking…');
+  showPlayer(title || '', 'connecting…');
 
   try {
-    // Step 1: LLM generates reflection
-    const text = await getLLMText(prompt, title, sectionHint, signal);
-    console.log(`[voice] LLM text (${text.length} chars): "${text.slice(0, 100)}…"`);
-
-    if (signal.aborted) return;
-    if (text.length < 10) { console.warn('[voice] Text too short'); hidePlayer(); return; }
-
-    // Step 2: ElevenLabs converts to audio
-    setStatus('speaking…');
-    const audioUrl = await getAudio(text, signal);
-
-    if (signal.aborted) return;
-
-    // Step 3: Play
-    console.log('[voice] Playing audio…');
-    await playAudio(audioUrl);
+    await playRealtimeVoice(prompt, title, sectionHint, signal);
     console.log('[voice] Done');
-
   } catch (e) {
     if (e.name !== 'AbortError') console.log('[voice] Error:', e.message);
   } finally {
@@ -265,6 +241,10 @@ function stop() {
   if (currentAudio) {
     currentAudio.pause();
     currentAudio = null;
+  }
+  if (currentPeerConnection) {
+    try { currentPeerConnection.close(); } catch {}
+    currentPeerConnection = null;
   }
   hidePlayer();
 }
