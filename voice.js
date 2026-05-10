@@ -10,7 +10,7 @@
  *
  * Flow:
  *   1. Caller provides a prompt (NFT metadata, overlay text, section concept)
- *   2. Prompt is sent to /api/voice — the LLM generates a FRESH reflection
+ *   2. Browser posts a WebRTC SDP offer to /api/voice/realtime/sdp
  *   3. gpt-realtime-2 speaks the reflection directly over WebRTC
  *   4. The player shows status: connecting → speaking → fades away
  *
@@ -20,7 +20,7 @@
 
 const VOICE = {
   apiBase: document.querySelector('meta[name="api-base"]')?.content
-    || 'https://spark-2b7c.tail7302f3.ts.net/api',
+    || 'https://api.vybn.ai',
   volume: 0.8,
 };
 
