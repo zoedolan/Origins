@@ -475,38 +475,6 @@
   </style>
 </head>
 <body>
-<section id="omni-vintage-diagnostic" style="max-width:760px;margin:1.25rem auto;padding:1rem;border:1px solid rgba(212,165,116,.45);border-radius:16px;background:rgba(10,10,15,.92);color:#E8E8E8;box-shadow:0 12px 40px rgba(0,0,0,.35);font-family:system-ui,-apple-system,Segoe UI,sans-serif">
-  <h2 style="margin:0 0 .35rem;color:#F5DEB3;font-family:Georgia,serif">Component diagnostics</h2>
-  <p style="margin:.25rem 0 .75rem;color:#A8C8E8;line-height:1.45">This is not the main chat. Omni is an embedding/perception worker, so a healthy result is a vector status, not prose. Vintage is a tiny fallback canary, so its raw text is not treated as truth. Use the chat below for conversation.</p>
-  <textarea id="ovq" style="width:100%;min-height:4.5rem;border-radius:10px;border:1px solid rgba(212,165,116,.35);background:#05050a;color:#fff;padding:.75rem">component smoke</textarea>
-  <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin:.75rem 0">
-    <button type="button" onclick="ovCheck(false)" style="padding:.65rem 1rem;border-radius:999px;border:0;background:#4A90D9;color:white;cursor:pointer">Check Omni worker</button>
-    <button type="button" onclick="ovCheck(true)" style="padding:.65rem 1rem;border-radius:999px;border:0;background:#C2724F;color:white;cursor:pointer">Check Vintage canary</button>
-  </div>
-  <div id="ovout" style="white-space:pre-wrap;background:#05050a;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:.75rem;color:#d7f7d7">ready</div>
-</section>
-<script>
-async function ovCheck(v){
-  const q=document.getElementById("ovq").value, o=document.getElementById("ovout");
-  const u=v?"https://api.vybn.ai/api/vintage":"https://api.vybn.ai/api/omni";
-  const b=v?{message:q,max_tokens:80,temperature:.2}:{input:q};
-  o.textContent="checking "+(v?"Vintage canary":"Omni worker")+"...";
-  try{
-    const ctl=new AbortController(); setTimeout(()=>ctl.abort(),30000);
-    const r=await fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b),signal:ctl.signal});
-    const j=await r.json();
-    if(!r.ok||!j.ok){o.textContent="component failed: HTTP "+r.status+"\n"+JSON.stringify(j,null,2);return}
-    if(!v){
-      const resp=j.response||{}, dim=resp.dim||resp?.data?.[0]?.embedding?.length||"unknown";
-      const dev=resp.device||"unknown", fb=resp.fallback===true?"yes":"no";
-      o.innerHTML="<strong>Omni healthy.</strong><br>Role: embedding/perception worker, not a chat model.<br>Device: "+dev+"<br>Dimensions: "+dim+"<br>Fallback: "+fb;
-    }else{
-      const txt=j.response?.choices?.[0]?.message?.content||"(no text)";
-      o.innerHTML="<strong>Vintage canary responded.</strong><br>Role: tiny fallback/canary, not semantic truth.<br><details><summary>Raw TinyLlama output</summary><pre style='white-space:pre-wrap'>"+txt.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))+"</pre></details>";
-    }
-  }catch(e){ o.textContent="request failed: "+e; }
-}
-</script>
 <a href="./" class="back-link">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <line x1="19" y1="12" x2="5" y2="12"></line>
