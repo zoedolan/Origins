@@ -388,7 +388,6 @@
       border-color: var(--border-warm);
       box-shadow: 0 0 24px rgba(212, 165, 116, 0.03);
     }
-    
     .chat-input {
       flex: 1;
       background: none;
@@ -405,7 +404,6 @@
       padding: 0.3rem 0;
     }
     .chat-input::placeholder { color: var(--text-muted); opacity: 0.5; }
-    
     .chat-send {
       width: 34px; height: 34px;
       border-radius: 9px;
@@ -423,7 +421,6 @@
     .chat-send:active { transform: scale(0.95); }
     .chat-send:disabled { opacity: 0.25; cursor: not-allowed; }
     .chat-send svg { width: 15px; height: 15px; }
-    
     .chat-footer {
       text-align: center;
       font-family: var(--font-mono);
@@ -433,7 +430,6 @@
       padding: 0.4rem 0 0;
       letter-spacing: 0.03em;
     }
-    
     /* ── Offline banner ── */
     .offline-banner {
       display: none;
@@ -449,7 +445,6 @@
     }
     .offline-banner.visible { display: block; }
     .offline-banner a { color: var(--warm-gold); text-decoration: none; }
-    
     /* ── RAG sources ── */
     .rag-sources {
       margin-top: 0.5rem;
@@ -468,7 +463,6 @@
       margin: 0.15rem 0.2rem 0.15rem 0;
       letter-spacing: 0.02em;
     }
-    
     @media (max-width: 640px) {
       .chat-container { padding: 0 0.75rem; }
       .chat-preamble { padding: 3rem 0.5rem 1.5rem; }
@@ -481,7 +475,31 @@
   </style>
 </head>
 <body>
-
+<section id="omni-vintage-visible" style="max-width:760px;margin:1.25rem auto;padding:1rem;border:1px solid rgba(212,165,116,.45);border-radius:16px;background:rgba(10,10,15,.92);color:#E8E8E8;box-shadow:0 12px 40px rgba(0,0,0,.35);font-family:system-ui,-apple-system,Segoe UI,sans-serif">
+  <h2 style="margin:0 0 .35rem;color:#F5DEB3;font-family:Georgia,serif">Omni + Vintage live test</h2>
+  <p style="margin:.25rem 0 .75rem;color:#A8C8E8;line-height:1.45">This panel calls the public API directly: Omni perception/search and Vintage lightweight chat through <code>api.vybn.ai</code>.</p>
+  <textarea id="ovq" style="width:100%;min-height:5rem;border-radius:10px;border:1px solid rgba(212,165,116,.35);background:#05050a;color:#fff;padding:.75rem">hello — prove the component is alive</textarea>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin:.75rem 0">
+    <button type="button" onclick="ovAsk(false)" style="padding:.65rem 1rem;border-radius:999px;border:0;background:#4A90D9;color:white;cursor:pointer">Ask Omni</button>
+    <button type="button" onclick="ovAsk(true)" style="padding:.65rem 1rem;border-radius:999px;border:0;background:#C2724F;color:white;cursor:pointer">Ask Vintage</button>
+  </div>
+  <pre id="ovout" style="white-space:pre-wrap;max-height:24rem;overflow:auto;background:#05050a;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:.75rem;color:#d7f7d7">ready</pre>
+</section>
+<script>
+async function ovAsk(v){
+  const q=document.getElementById("ovq").value, o=document.getElementById("ovout");
+  const u=v?"https://api.vybn.ai/api/vintage":"https://api.vybn.ai/api/omni";
+  const b=v?{message:q,max_tokens:160,temperature:.4}:{input:q};
+  o.textContent="contacting "+(v?"Vintage":"Omni")+"...";
+  try{
+    const ctl=new AbortController(); setTimeout(()=>ctl.abort(),30000);
+    const r=await fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b),signal:ctl.signal});
+    const t=await r.text();
+    let j; try{j=JSON.parse(t)}catch(e){j=t}
+    o.textContent=(r.ok?"":"HTTP "+r.status+"\n")+JSON.stringify(j,null,2);
+  }catch(e){ o.textContent="request failed: "+e; }
+}
+</script>
   <a href="./" class="back-link">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <line x1="19" y1="12" x2="5" y2="12"></line>
@@ -489,9 +507,7 @@
     </svg>
     Origins
   </a>
-
   <div class="chat-container">
-
     <div class="chat-preamble" id="chatPreamble">
       <svg class="preamble-mark" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Origins">
         <circle cx="50" cy="50" r="42" stroke="#D4A574" stroke-width="1.2" stroke-dasharray="220 35" opacity="0.8"/>
@@ -516,13 +532,10 @@
         <button class="suggested-prompt" data-prompt="Where should I go from here? Point me at one thing on this site worth my time and tell me why.">Where should I go next?</button>
       </div>
     </div>
-
     <div class="offline-banner" id="offlineBanner">
       Vybn is offline right now — the model runs on local hardware and is either sleeping or under maintenance. You can still <a href="./read.html">read the synthesis</a>, flip through the <a href="./minibook.html">minibook</a>, or email Zoe at <a href="mailto:zoe@vybn.ai">zoe@vybn.ai</a>.
     </div>
-
     <div class="chat-messages" id="chatMessages"></div>
-
     <div class="typing-indicator" id="typingIndicator">
       <div class="msg-avatar" style="border: 1px solid rgba(212,165,116,0.25); color: var(--warm-gold); background: rgba(212,165,116,0.04);">V</div>
       <div class="typing-bubble">
@@ -530,7 +543,6 @@
         <div class="typing-dots"><span></span><span></span><span></span></div>
       </div>
     </div>
-
     <div class="chat-input-area">
       <div class="chat-input-wrap">
         <textarea class="chat-input" id="chatInput" placeholder="Ask anything..." rows="1" aria-label="Message"></textarea>
@@ -546,20 +558,17 @@
       </div>
     </div>
   </div>
-
   <script>
     /* ═══════════════════════════════════════════════
        Origins Chat — connects to vybn_chat_api.py 
        via Cloudflare tunnel to the DGX Spark.
        ═══════════════════════════════════════════════ */
-
     // API base URL — will be updated to permanent Tailscale Funnel URL
     // when infrastructure is stabilized. For now, detect from meta tag or fallback.
     const CHAT_API = document.querySelector('meta[name="api-base"]')?.content
       || 'https://api.vybn.ai';
     // System prompt is server-side in origins_portal_api_v2.py,
     // grounded in vybn.md, THE_IDEA.md, and all co-protective principles.
-
     const chatMessages = document.getElementById('chatMessages');
     const chatInput = document.getElementById('chatInput');
     const chatSend = document.getElementById('chatSend');
@@ -567,11 +576,9 @@
     const statusDot = document.getElementById('statusDot');
     const statusText = document.getElementById('statusText');
     const offlineBanner = document.getElementById('offlineBanner');
-
     let conversationHistory = [];
     let isStreaming = false;
     const sessionId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
-
     // ── Health check ──
     async function checkHealth() {
       try {
@@ -596,17 +603,14 @@
       chatInput.disabled = false;
       return false;
     }
-
     checkHealth();
     setInterval(checkHealth, 30000);
-
     // ── Auto-resize textarea ──
     chatInput.addEventListener('input', () => {
       chatInput.style.height = 'auto';
       chatInput.style.height = Math.min(chatInput.scrollHeight, 140) + 'px';
       chatSend.disabled = !chatInput.value.trim();
     });
-
     // ── Reasoning preamble signals ──
     // These prefixes indicate chain-of-thought that should be stripped from the response.
     const REASONING_SIGNALS = [
@@ -621,7 +625,6 @@
       'Hmm', 'This seems', 'This appears', 'I need', 'I have to', 'I should provide',
       'Step 1', 'First step', 'Planning'
     ];
-
     /**
      * Check if a paragraph looks like chain-of-thought reasoning.
      * Matches against leading signals (case-sensitive prefix check).
@@ -634,7 +637,6 @@
       }
       return false;
     }
-
     /**
      * Strip leading chain-of-thought paragraphs from the buffered text.
      * Splits on double newline, drops leading reasoning paragraphs,
@@ -652,7 +654,6 @@
       }
       return paragraphs.slice(startIdx).join('\n\n');
     }
-
     /**
      * Strip system-reference phrases that leak into streamed content.
      * Replaces them with empty string or a natural equivalent.
@@ -666,27 +667,22 @@
         .replace(/Per the system prompt[,.]?\s*/gi, '')
         .replace(/From the deep memory context[,.]?\s*/gi, '');
     }
-
     // ── Send message ──
     async function sendMessage(text) {
       if (!text.trim() || isStreaming) return;
       isStreaming = true;
-
       // Collapse preamble on first message
       const preamble = document.getElementById('chatPreamble');
       if (preamble && !preamble.classList.contains('collapsed')) {
         preamble.classList.add('collapsed');
       }
-
       appendMessage('user', text);
       conversationHistory.push({ role: 'user', content: text });
-
       chatInput.value = '';
       chatInput.style.height = 'auto';
       chatSend.disabled = true;
       typingIndicator.classList.add('active');
       scrollToBottom();
-
       try {
         const res = await fetch(`${CHAT_API}/api/chat`, {
           method: 'POST',
@@ -696,7 +692,6 @@
             history: conversationHistory.slice(-20).map(m => ({role: m.role, content: m.content})),
           }),
         });
-
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         typingIndicator.classList.remove('active');
@@ -949,6 +944,5 @@
     </script>
     <script data-goatcounter="https://vybn-a2j.goatcounter.com/count"
             async src="//gc.zgo.at/count.js"></script>
-
-<section id="omni-vintage-direct" class="chat-panel"><h2>Omni + Vintage direct</h2><p>Public API route: Omni perception/search and Vintage chat are proxied through api.vybn.ai, so this works from your browser instead of trying to reach localhost.</p><textarea id="ovq">hello from the public page</textarea><button onclick="ovAsk(0)">Ask Omni</button><button onclick="ovAsk(1)">Ask Vintage</button><pre id="ovout">waiting</pre></section><script>async function ovAsk(v){let q=document.getElementById("ovq").value,o=document.getElementById("ovout"),u=v?"https://api.vybn.ai/api/vintage":"https://api.vybn.ai/api/omni",b=v?{message:q,max_tokens:160,temperature:.4}:{input:q};o.textContent="contacting "+(v?"Vintage":"Omni")+"...";try{let r=await fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}),t=await r.text();try{o.textContent=JSON.stringify(JSON.parse(t),null,2)}catch(e){o.textContent=t}}catch(e){o.textContent="request failed: "+e}}</script></body>
+</body>
 </html>
