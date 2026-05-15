@@ -475,32 +475,39 @@
   </style>
 </head>
 <body>
-<section id="omni-vintage-visible" style="max-width:760px;margin:1.25rem auto;padding:1rem;border:1px solid rgba(212,165,116,.45);border-radius:16px;background:rgba(10,10,15,.92);color:#E8E8E8;box-shadow:0 12px 40px rgba(0,0,0,.35);font-family:system-ui,-apple-system,Segoe UI,sans-serif">
-  <h2 style="margin:0 0 .35rem;color:#F5DEB3;font-family:Georgia,serif">Omni + Vintage live test</h2>
-  <p style="margin:.25rem 0 .75rem;color:#A8C8E8;line-height:1.45">This panel calls the public API directly: Omni perception/search and Vintage lightweight chat through <code>api.vybn.ai</code>.</p>
-  <textarea id="ovq" style="width:100%;min-height:5rem;border-radius:10px;border:1px solid rgba(212,165,116,.35);background:#05050a;color:#fff;padding:.75rem">hello — prove the component is alive</textarea>
+<section id="omni-vintage-diagnostic" style="max-width:760px;margin:1.25rem auto;padding:1rem;border:1px solid rgba(212,165,116,.45);border-radius:16px;background:rgba(10,10,15,.92);color:#E8E8E8;box-shadow:0 12px 40px rgba(0,0,0,.35);font-family:system-ui,-apple-system,Segoe UI,sans-serif">
+  <h2 style="margin:0 0 .35rem;color:#F5DEB3;font-family:Georgia,serif">Component diagnostics</h2>
+  <p style="margin:.25rem 0 .75rem;color:#A8C8E8;line-height:1.45">This is not the main chat. Omni is an embedding/perception worker, so a healthy result is a vector status, not prose. Vintage is a tiny fallback canary, so its raw text is not treated as truth. Use the chat below for conversation.</p>
+  <textarea id="ovq" style="width:100%;min-height:4.5rem;border-radius:10px;border:1px solid rgba(212,165,116,.35);background:#05050a;color:#fff;padding:.75rem">component smoke</textarea>
   <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin:.75rem 0">
-    <button type="button" onclick="ovAsk(false)" style="padding:.65rem 1rem;border-radius:999px;border:0;background:#4A90D9;color:white;cursor:pointer">Ask Omni</button>
-    <button type="button" onclick="ovAsk(true)" style="padding:.65rem 1rem;border-radius:999px;border:0;background:#C2724F;color:white;cursor:pointer">Ask Vintage</button>
+    <button type="button" onclick="ovCheck(false)" style="padding:.65rem 1rem;border-radius:999px;border:0;background:#4A90D9;color:white;cursor:pointer">Check Omni worker</button>
+    <button type="button" onclick="ovCheck(true)" style="padding:.65rem 1rem;border-radius:999px;border:0;background:#C2724F;color:white;cursor:pointer">Check Vintage canary</button>
   </div>
-  <pre id="ovout" style="white-space:pre-wrap;max-height:24rem;overflow:auto;background:#05050a;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:.75rem;color:#d7f7d7">ready</pre>
+  <div id="ovout" style="white-space:pre-wrap;background:#05050a;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:.75rem;color:#d7f7d7">ready</div>
 </section>
 <script>
-async function ovAsk(v){
+async function ovCheck(v){
   const q=document.getElementById("ovq").value, o=document.getElementById("ovout");
   const u=v?"https://api.vybn.ai/api/vintage":"https://api.vybn.ai/api/omni";
-  const b=v?{message:q,max_tokens:160,temperature:.4}:{input:q};
-  o.textContent="contacting "+(v?"Vintage":"Omni")+"...";
+  const b=v?{message:q,max_tokens:80,temperature:.2}:{input:q};
+  o.textContent="checking "+(v?"Vintage canary":"Omni worker")+"...";
   try{
     const ctl=new AbortController(); setTimeout(()=>ctl.abort(),30000);
     const r=await fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b),signal:ctl.signal});
-    const t=await r.text();
-    let j; try{j=JSON.parse(t)}catch(e){j=t}
-    o.textContent=(r.ok?"":"HTTP "+r.status+"\n")+JSON.stringify(j,null,2);
+    const j=await r.json();
+    if(!r.ok||!j.ok){o.textContent="component failed: HTTP "+r.status+"\n"+JSON.stringify(j,null,2);return}
+    if(!v){
+      const resp=j.response||{}, dim=resp.dim||resp?.data?.[0]?.embedding?.length||"unknown";
+      const dev=resp.device||"unknown", fb=resp.fallback===true?"yes":"no";
+      o.innerHTML="<strong>Omni healthy.</strong><br>Role: embedding/perception worker, not a chat model.<br>Device: "+dev+"<br>Dimensions: "+dim+"<br>Fallback: "+fb;
+    }else{
+      const txt=j.response?.choices?.[0]?.message?.content||"(no text)";
+      o.innerHTML="<strong>Vintage canary responded.</strong><br>Role: tiny fallback/canary, not semantic truth.<br><details><summary>Raw TinyLlama output</summary><pre style='white-space:pre-wrap'>"+txt.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))+"</pre></details>";
+    }
   }catch(e){ o.textContent="request failed: "+e; }
 }
 </script>
-  <a href="./" class="back-link">
+<a href="./" class="back-link">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <line x1="19" y1="12" x2="5" y2="12"></line>
       <polyline points="12 19 5 12 12 5"></polyline>
@@ -693,11 +700,9 @@ async function ovAsk(v){
           }),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
         typingIndicator.classList.remove('active');
         const msgEl = appendMessage('vybn', '');
         const contentEl = msgEl.querySelector('.msg-content');
-
         // Show inline thinking state inside the bubble while buffering
         contentEl.innerHTML = `
           <div class="msg-thinking">
@@ -708,7 +713,6 @@ async function ovAsk(v){
         `;
         let fullResponse = '';
         let ragSources = [];
-
         // ── Buffering state ──
         // Nemotron outputs reasoning WITHOUT <think> tags, then emits </think>
         // before the real answer. Buffer until we see </think> or hit limit.
@@ -716,32 +720,24 @@ async function ovAsk(v){
         let responseBuffer = '';
         let bufferFlushed = false;
         let firstContentRendered = false;
-
         // SSE parsing state
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let sseBuffer = ''; // incomplete SSE line accumulator
-
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-
           sseBuffer += decoder.decode(value, { stream: true });
-
           // Split on newlines; keep last incomplete fragment in sseBuffer
           const lines = sseBuffer.split('\n');
           sseBuffer = lines.pop(); // last element may be incomplete
-
           for (const line of lines) {
             const trimmedLine = line.trim();
             if (!trimmedLine) continue;
             if (!trimmedLine.startsWith('data:')) continue;
-
             const data = trimmedLine.slice(5).trim();
-
             // Handle [DONE] cleanly
             if (data === '[DONE]') continue;
-
             // Parse JSON payload
             let parsed;
             try {
@@ -750,21 +746,17 @@ async function ovAsk(v){
               // Not valid JSON — skip silently
               continue;
             }
-
             // Handle RAG sources event
             if (parsed.rag_sources) {
               ragSources = parsed.rag_sources;
               continue;
             }
-
             // Extract delta content (support multiple API shapes)
             const delta = parsed.content || parsed.choices?.[0]?.delta?.content || '';
             if (!delta) continue;
-
             if (!bufferFlushed) {
               // Still buffering — look for </think> boundary
               responseBuffer += delta;
-
               if (responseBuffer.includes('</think>')) {
                 // Found the boundary — everything after is the real answer
                 bufferFlushed = true;
@@ -778,7 +770,6 @@ async function ovAsk(v){
                 // Still accumulating — skip rendering
                 continue;
               }
-
               if (fullResponse.trim()) {
                 contentEl.innerHTML = renderMarkdown(fullResponse);
                 if (!firstContentRendered) {
@@ -798,7 +789,6 @@ async function ovAsk(v){
             }
           }
         }
-
         // Flush any remaining SSE buffer content
         if (sseBuffer.trim()) {
           const trimmedLine = sseBuffer.trim();
@@ -825,7 +815,6 @@ async function ovAsk(v){
             }
           }
         }
-
         // If buffer was never flushed (response shorter than limit),
         // process it now — check for </think> first
         if (!bufferFlushed && responseBuffer) {
@@ -836,7 +825,6 @@ async function ovAsk(v){
             fullResponse = cleanSystemRefs(stripReasoningPreamble(responseBuffer));
           }
         }
-
         // Final render pass to ensure we have the complete cleaned response
         if (fullResponse.trim()) {
           contentEl.innerHTML = renderMarkdown(fullResponse);
@@ -852,7 +840,6 @@ async function ovAsk(v){
           fullResponse = '';
           contentEl.innerHTML = '';
         }
-
         // Show RAG sources if any
         if (ragSources.length > 0) {
           const sourcesDiv = document.createElement('div');
@@ -869,9 +856,7 @@ async function ovAsk(v){
           });
           msgEl.querySelector('.msg-body').appendChild(sourcesDiv);
         }
-
         conversationHistory.push({ role: 'assistant', content: fullResponse });
-
       } catch (err) {
         typingIndicator.classList.remove('active');
         appendMessage('vybn', 'I seem to be having trouble connecting right now. The Spark may be resting. You can try again shortly, or explore the rest of Origins — the long-form synthesis is at read.html.');
