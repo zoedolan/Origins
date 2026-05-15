@@ -6,14 +6,11 @@
   <title>Talk — Origins</title>
   <meta name="description" content="Talk to Vybn — an AI research partner built with Zoe Dolan since 2022. Ask about the site, the ideas, or just say hi. No prior context needed.">
   <meta name="api-base" content="https://api.vybn.ai">
-  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-  
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    
     :root {
       --bg: #0a0a0f;
       --bg-surface: #0e0e16;
@@ -32,12 +29,10 @@
       --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
       --chat-max: 720px;
     }
-    
     html {
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
-    
     body {
       background: var(--bg);
       color: var(--text-color);
@@ -47,7 +42,6 @@
       display: flex;
       flex-direction: column;
     }
-    
     /* ── Ambient background ── */
     body::before {
       content: '';
@@ -59,7 +53,6 @@
       pointer-events: none;
       z-index: 0;
     }
-    
     /* ── Back link ── */
     .back-link {
       position: fixed;
@@ -79,7 +72,6 @@
     }
     .back-link:hover { color: var(--warm-gold); }
     .back-link svg { width: 14px; height: 14px; }
-    
     /* ── Chat layout ── */
     .chat-container {
       position: relative;
@@ -92,18 +84,15 @@
       margin: 0 auto;
       padding: 0 1.25rem;
     }
-    
     /* ── Preamble ── */
     .chat-preamble {
       text-align: center;
       padding: 4rem 1rem 2rem;
       flex-shrink: 0;
     }
-    
     .chat-preamble.collapsed {
       display: none;
     }
-    
     .preamble-mark {
       width: 48px;
       height: 48px;
@@ -111,12 +100,10 @@
       opacity: 0.7;
       animation: breathe 5s ease-in-out infinite;
     }
-    
     @keyframes breathe {
       0%, 100% { opacity: 0.5; transform: scale(1); }
       50% { opacity: 0.85; transform: scale(1.04); }
     }
-    
     .chat-preamble h1 {
       font-family: var(--font-serif);
       font-size: 1.5rem;
@@ -125,7 +112,6 @@
       margin-bottom: 0.75rem;
       letter-spacing: 0.02em;
     }
-    
     .chat-preamble .intro {
       font-size: 0.85rem;
       font-weight: 300;
@@ -134,7 +120,6 @@
       max-width: 520px;
       margin: 0 auto 1.5rem;
     }
-    
     .status-line {
       font-family: var(--font-mono);
       font-size: 0.65rem;
@@ -145,7 +130,6 @@
       gap: 0.5rem;
       margin-bottom: 1.5rem;
     }
-    
     .status-dot {
       width: 6px; height: 6px;
       border-radius: 50%;
@@ -158,16 +142,13 @@
       animation: pulse-dot 2s ease-in-out infinite;
     }
     .status-dot.offline { background: #f87171; }
-    
     @keyframes pulse-dot {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.5; }
     }
-    
     .status-text { color: var(--text-muted); }
     .status-text.online { color: #4ade80; }
     .status-text.offline { color: #f87171; }
-    
     /* ── Suggested prompts ── */
     .suggested-prompts {
       display: flex;
@@ -175,7 +156,6 @@
       gap: 0.5rem;
       justify-content: center;
     }
-    
     .suggested-prompt {
       font-family: var(--font-sans);
       font-size: 0.75rem;
@@ -193,7 +173,6 @@
       border-color: var(--warm-gold);
       background: rgba(212, 165, 116, 0.06);
     }
-    
     /* ── Messages area ── */
     .chat-messages {
       flex: 1;
@@ -201,11 +180,9 @@
       padding: 0.5rem 0 1rem;
       scroll-behavior: smooth;
     }
-    
     .chat-messages::-webkit-scrollbar { width: 3px; }
     .chat-messages::-webkit-scrollbar-track { background: transparent; }
     .chat-messages::-webkit-scrollbar-thumb { background: rgba(212, 165, 116, 0.12); border-radius: 2px; }
-    
     .msg {
       display: flex;
       gap: 0.65rem;
@@ -213,12 +190,10 @@
       animation: msg-in 0.3s ease-out;
     }
     .msg.user { flex-direction: row-reverse; }
-    
     @keyframes msg-in {
       from { opacity: 0; transform: translateY(6px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    
     .msg-avatar {
       width: 28px; height: 28px;
       border-radius: 50%;
@@ -231,7 +206,6 @@
       font-weight: 500;
       margin-top: 0.2rem;
     }
-    
     .msg.vybn .msg-avatar {
       border: 1px solid rgba(212, 165, 116, 0.25);
       color: var(--warm-gold);
@@ -985,5 +959,6 @@
     </script>
     <script data-goatcounter="https://vybn-a2j.goatcounter.com/count"
             async src="//gc.zgo.at/count.js"></script>
-</body>
+
+<section id="omni-vintage-direct" class="chat-panel"><h2>Omni + Vintage direct</h2><p>Omni perceives/searches on localhost:8003; Vintage chats on localhost:8018. Edit endpoints if your browser reaches them through a safe tunnel.</p><textarea id="ovq">hello from the public page</textarea><button onclick="ovAsk(0)">Ask Omni</button><button onclick="ovAsk(1)">Ask Vintage</button><pre id="ovout">waiting</pre></section><script>async function ovPost(u,b){let r=await fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}),t=await r.text();try{return JSON.stringify(JSON.parse(t),null,2)}catch(e){return t}}async function ovAsk(v){let q=document.getElementById("ovq").value,o=document.getElementById("ovout");o.textContent="contacting "+(v?"Vintage":"Omni")+"...";try{if(v)o.textContent=await ovPost("http://127.0.0.1:8018/v1/chat/completions",{model:"tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",messages:[{role:"user",content:q}],max_tokens:160,temperature:.4});else try{o.textContent=await ovPost("http://127.0.0.1:8003/v1/embeddings",{model:"all-MiniLM",input:q})}catch(e){o.textContent=await ovPost("http://127.0.0.1:8003/embed",{text:q})}}catch(e){o.textContent="request failed: "+e}}</script></body>
 </html>
