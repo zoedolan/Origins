@@ -216,9 +216,7 @@
       color: var(--text-muted);
       background: rgba(200, 204, 212, 0.04);
     }
-    
     .msg-body { max-width: 85%; min-width: 0; }
-    
     .msg-content {
       padding: 0.8rem 1rem;
       border-radius: 12px;
@@ -226,7 +224,6 @@
       line-height: 1.75;
       font-weight: 300;
     }
-    
     .msg.vybn .msg-content {
       background: var(--bg-surface);
       border: 1px solid var(--border-subtle);
@@ -239,7 +236,6 @@
       color: var(--text-color);
       border-top-right-radius: 3px;
     }
-    
     .msg-content p { margin-bottom: 0.65rem; }
     .msg-content p:last-child { margin-bottom: 0; }
     .msg-content strong { color: #dde0e6; font-weight: 500; }
@@ -272,7 +268,6 @@
     }
     .msg-content ul, .msg-content ol { padding-left: 1.25rem; margin: 0.5rem 0; }
     .msg-content li { margin-bottom: 0.3rem; }
-    
     /* ── Typing indicator ── */
     .typing-indicator {
       display: none;
@@ -281,7 +276,6 @@
       align-items: flex-start;
     }
     .typing-indicator.active { display: flex; }
-    
     .typing-bubble {
       display: flex;
       align-items: center;
@@ -300,7 +294,6 @@
       opacity: 0.7;
       letter-spacing: 0.02em;
     }
-    
     /* ── Inline thinking state inside message bubble ── */
     .msg-thinking {
       display: flex;
@@ -369,12 +362,10 @@
     }
     .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
     .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
-    
     @keyframes dot-bounce {
       0%, 60%, 100% { transform: translateY(0); opacity: 0.35; }
       30% { transform: translateY(-4px); opacity: 1; }
     }
-    
     /* ── Input area ── */
     .chat-input-area {
       position: sticky;
@@ -383,7 +374,6 @@
       padding: 0.75rem 0 1.25rem;
       flex-shrink: 0;
     }
-    
     .chat-input-wrap {
       display: flex;
       align-items: flex-end;
@@ -960,5 +950,5 @@
     <script data-goatcounter="https://vybn-a2j.goatcounter.com/count"
             async src="//gc.zgo.at/count.js"></script>
 
-<section id="omni-vintage-direct" class="chat-panel"><h2>Omni + Vintage direct</h2><p>Omni perceives/searches on localhost:8003; Vintage chats on localhost:8018. Edit endpoints if your browser reaches them through a safe tunnel.</p><textarea id="ovq">hello from the public page</textarea><button onclick="ovAsk(0)">Ask Omni</button><button onclick="ovAsk(1)">Ask Vintage</button><pre id="ovout">waiting</pre></section><script>async function ovPost(u,b){let r=await fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}),t=await r.text();try{return JSON.stringify(JSON.parse(t),null,2)}catch(e){return t}}async function ovAsk(v){let q=document.getElementById("ovq").value,o=document.getElementById("ovout");o.textContent="contacting "+(v?"Vintage":"Omni")+"...";try{if(v)o.textContent=await ovPost("http://127.0.0.1:8018/v1/chat/completions",{model:"tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",messages:[{role:"user",content:q}],max_tokens:160,temperature:.4});else try{o.textContent=await ovPost("http://127.0.0.1:8003/v1/embeddings",{model:"all-MiniLM",input:q})}catch(e){o.textContent=await ovPost("http://127.0.0.1:8003/embed",{text:q})}}catch(e){o.textContent="request failed: "+e}}</script></body>
+<section id="omni-vintage-direct" class="chat-panel"><h2>Omni + Vintage direct</h2><p>Public API route: Omni perception/search and Vintage chat are proxied through api.vybn.ai, so this works from your browser instead of trying to reach localhost.</p><textarea id="ovq">hello from the public page</textarea><button onclick="ovAsk(0)">Ask Omni</button><button onclick="ovAsk(1)">Ask Vintage</button><pre id="ovout">waiting</pre></section><script>async function ovAsk(v){let q=document.getElementById("ovq").value,o=document.getElementById("ovout"),u=v?"https://api.vybn.ai/api/vintage":"https://api.vybn.ai/api/omni",b=v?{message:q,max_tokens:160,temperature:.4}:{input:q};o.textContent="contacting "+(v?"Vintage":"Omni")+"...";try{let r=await fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}),t=await r.text();try{o.textContent=JSON.stringify(JSON.parse(t),null,2)}catch(e){o.textContent=t}}catch(e){o.textContent="request failed: "+e}}</script></body>
 </html>
