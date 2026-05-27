@@ -63,11 +63,6 @@
   const body = panel.querySelector('p:not(.house-panel-kicker)');
   const openButton = panel.querySelector('[data-open-room]');
   const fullLink = panel.querySelector('[data-full-room]');
-  const frameShell = house.querySelector('.house-frame');
-  const frame = house.querySelector('[data-frame]');
-  const frameTitle = house.querySelector('[data-frame-title]');
-  const frameFull = house.querySelector('[data-frame-full]');
-  const frameClose = house.querySelector('[data-frame-close]');
 
   let current = 'terrain';
 
@@ -84,7 +79,6 @@
     title.textContent = room.title;
     body.textContent = room.body;
     fullLink.href = room.href;
-    frameFull.href = room.href;
     if (room.reader) {
       openButton.disabled = false;
       openButton.textContent = 'read inside the field';
@@ -103,7 +97,8 @@
     if (opts.open && room.native) openConnect();
     if (opts.open && room.shape) openShape();
     if (name === 'shape') openShape(); else closeShape();
-    if (name === 'terrain') { closeFrame(); closeConnect(); closeShape(); if (window.__somewhere && window.__somewhere.reader && window.__somewhere.reader.isOpen) window.__somewhere.reader.close(); }
+    if (name === 'connect') openConnect();
+    if (name === 'terrain') { closeConnect(); closeShape(); if (window.__somewhere && window.__somewhere.reader && window.__somewhere.reader.isOpen) window.__somewhere.reader.close(); }
     if (name !== 'connect') closeConnect();
     if (name !== 'shape') closeShape();
   }
@@ -124,24 +119,6 @@
   function closeShape() { if (shapePanel) { shapePanel.hidden = true; if (window.__somewhere && window.__somewhere.shape) window.__somewhere.shape.stop(); } }
 
 
-  function openFrame() {
-    const room = rooms[current];
-    if (!room || !room.embed) return;
-    frameTitle.textContent = room.kicker;
-    frameFull.href = room.href;
-    frameShell.classList.remove("frame-missing");
-    const fb = frameShell.querySelector(".house-fallback a");
-    if (fb) fb.href = room.href;
-    frame.src = room.embed;
-    window.setTimeout(() => { if (!frame.src || frame.src === "about:blank") frameShell.classList.add("frame-missing"); }, 1200);
-    frameShell.hidden = false;
-  }
-
-  function closeFrame() {
-    frameShell.hidden = true;
-    if (frame.src !== 'about:blank') frame.src = 'about:blank';
-  }
-
   buttons.forEach(button => button.addEventListener('click', () => setRoom(button.dataset.room)));
   openButton.addEventListener('click', () => {
     const room = rooms[current];
@@ -149,9 +126,8 @@
     else if (room && room.native) openConnect();
     else if (room && room.shape) openShape();
   });
-  frameClose.addEventListener('click', () => { closeFrame(); setRoom('terrain'); });
   document.addEventListener('keydown', event => {
-    if (event.key === 'Escape') closeFrame();
+    if (event.key === 'Escape')
   });
 
   const initial = location.hash.replace('#', '');

@@ -231,6 +231,9 @@
       <button class="house-room" type="button" data-room="shape" role="tab" aria-selected="false">
         <span>Shape</span><em>the rolling ratchet</em>
       </button>
+      <button class="house-room" type="button" data-room="connect" role="tab" aria-selected="false">
+        <span>Connect</span><em>find the Others</em>
+      </button>
     </div>
 
     <article class="house-panel" aria-live="polite">
@@ -242,17 +245,6 @@
         <a href="./somewhere.html" data-full-room>open full</a>
       </div>
     </article>
-
-    <aside class="house-frame" hidden aria-label="Embedded room">
-      <div class="house-frame-bar">
-        <span data-frame-title>Room</span>
-        <a href="./somewhere.html" data-frame-full>open full</a>
-        <button type="button" data-frame-close>return to terrain</button>
-      </div>
-      <iframe title="Somewhere room" data-frame src="about:blank"></iframe>
-        <div class="house-fallback" data-frame-fallback>That room did not open inside the house. <a href="./somewhere.html" data-frame-fallback-link>Open it full-screen.</a></div>
-    </aside>
-
     <!-- Connect room — natively embedded, not iframe -->
     <aside class="house-connect-room" id="house-connect" hidden aria-label="Connect room">
       <div class="connect-inner">
