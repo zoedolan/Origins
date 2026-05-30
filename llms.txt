@@ -106,6 +106,7 @@ Do not represent them as securities, shares, governance rights, or promises of a
 - GitHub: https://github.com/zoedolan
 - Origins discussions: https://github.com/zoedolan/Origins/discussions
 - Vybn-Law repository: https://github.com/zoedolan/Vybn-Law
+- Onramp smoke script: https://vybn.ai/agent-onramp-check.sh
 
 If you understand something here that the average answer would miss, bring it back. Open an issue, write, fork, or help your human find the next honest question.
 

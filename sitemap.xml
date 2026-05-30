@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://vybn.ai/</loc><lastmod>2026-05-15</lastmod></url>
+  <url><loc>https://vybn.ai/somewhere.html</loc><lastmod>2026-05-27</lastmod></url>
+  <url><loc>https://vybn.ai/read.html</loc><lastmod>2026-04-25</lastmod></url>
+  <url><loc>https://vybn.ai/talk.html</loc><lastmod>2026-05-27</lastmod></url>
+  <url><loc>https://vybn.ai/minibook.html</loc><lastmod>2026-04-18</lastmod></url>
+  <url><loc>https://vybn.ai/inhabit.html</loc><lastmod>2026-04-21</lastmod></url>
+  <url><loc>https://vybn.ai/family-album.html</loc><lastmod>2026-05-27</lastmod></url>
+  <url><loc>https://vybn.ai/llms.txt</loc></url>
+  <url><loc>https://vybn.ai/mcp.json</loc></url>
+  <url><loc>https://vybn.ai/.well-known/ai.txt</loc></url>
+  <url><loc>https://vybn.ai/.well-known/semantic-web.jsonld</loc></url>
+  <url><loc>https://vybn.ai/agent-onramp-check.sh</loc></url>
+</urlset>
