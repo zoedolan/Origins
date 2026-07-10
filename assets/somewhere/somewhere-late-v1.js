@@ -126,10 +126,6 @@
     else if (room && room.native) openConnect();
     else if (room && room.shape) openShape();
   });
-  document.addEventListener('keydown', event => {
-    if (event.key === 'Escape')
-  });
-
   const initial = location.hash.replace('#', '');
   if (rooms[initial] && rooms[initial].reader) {
     setRoom(initial, { silentHash: true });

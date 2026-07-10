@@ -5,6 +5,10 @@ BASE="${1:-https://vybn.ai}"
 API="${2:-https://api.vybn.ai}"
 FAIL=0
 
+# Refuse to smoke-test JavaScript the browser cannot parse.
+while IFS= read -r -d '' file; do
+  node --check "$file" >/dev/null || FAIL=1
+done < <(find "$(dirname "$0")" -type f -name '*.js' -print0)
 check_get() {
   name="$1"
   url="$2"
