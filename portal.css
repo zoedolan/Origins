@@ -1,0 +1,1312 @@
+/* ============================================
+   Origins Portal — Styles
+   ============================================ */
+
+/* Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #0a0a0f;
+  --warm-gold: #D4A574;
+  --warm-amber: #C2724F;
+  --warm-red: #8B3A3A;
+  --warm-wheat: #F5DEB3;
+  --cool-blue: #4A90D9;
+  --cool-ice: #A8C8E8;
+  --cool-silver: #E8E8F0;
+  --cool-white: #FFFFFF;
+  --interference: #C9A86C;
+  --text-color: #E8E8E8;
+  --text-muted: #8a8a9a;
+  --font-serif: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: auto; /* GSAP handles scroll */
+}
+
+body {
+  background: var(--bg);
+  color: var(--text-color);
+  font-family: var(--font-serif);
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* ============================================
+   Canvas — fixed behind everything
+   ============================================ */
+#portal-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  display: block;
+}
+
+/* ============================================
+   Vybn® Brand Mark
+   ============================================ */
+.vybn-brand {
+  position: fixed;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  pointer-events: none;
+  text-align: center;
+  opacity: 0;
+  animation: brand-fade-in 2s ease 1.5s forwards;
+}
+.vybn-brand h1 {
+  font-family: 'Cormorant Garamond', var(--font-serif);
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: #d4a853;
+  margin: 0;
+  line-height: 1;
+}
+.vybn-brand h1 sup {
+  font-size: 0.35em;
+  vertical-align: super;
+  opacity: 0.55;
+}
+.vybn-brand .vybn-sub {
+  font-family: var(--font-sans);
+  font-size: 0.55rem;
+  color: rgba(212, 168, 83, 0.35);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 0.3rem;
+}
+@keyframes brand-fade-in {
+  to { opacity: 1; }
+}
+@media (max-width: 640px) {
+  .vybn-brand { top: 1rem; }
+  .vybn-brand h1 { font-size: 1.4rem; }
+}
+
+/* ============================================
+   Scroll Container
+   ============================================ */
+#scroll-container {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+
+#scroll-container a,
+#scroll-container button,
+#scroll-container [role="link"],
+#scroll-container [role="button"] {
+  pointer-events: auto;
+}
+
+.portal-section {
+  position: relative;
+  width: 100%;
+}
+
+.section-spacer {
+  width: 100%;
+}
+
+/* ============================================
+   Text Overlays — fixed to viewport
+   ============================================ */
+.text-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.text-overlay.visible {
+  opacity: 1;
+}
+
+.text-overlay p {
+  font-family: var(--font-serif);
+  font-size: clamp(1.125rem, 1rem + 1vw, 1.75rem);
+  line-height: 1.65;
+  color: var(--text-color);
+  text-shadow:
+    0 0 40px rgba(10, 10, 15, 0.95),
+    0 0 80px rgba(10, 10, 15, 0.8),
+    0 2px 4px rgba(0, 0, 0, 0.9);
+  max-width: 700px;
+  padding: 0 1.5rem;
+}
+
+.text-overlay em {
+  font-style: italic;
+  color: var(--warm-wheat);
+}
+
+/* Interactive text overlays: hover brings text to foreground in gold.
+   Applies to the narrative overlays (quote, cascade labels, epistemologies,
+   insight lines) — not the entry title or portal-final utility text.
+   Gated by .text-active class added via JS when overlay is visible. */
+.queen-text.text-active p,
+.epist-text.text-active h3,
+.cascade-label.text-active span,
+.insight-line.text-active {
+  pointer-events: auto;
+  cursor: pointer;
+  transition: color 0.4s ease, transform 0.4s ease, text-shadow 0.4s ease;
+}
+
+.queen-text.text-active p:hover,
+.epist-text.text-active h3:hover,
+.cascade-label.text-active span:hover,
+#ep-apriori.text-active h3:hover,
+#ep-aposteriori.text-active h3:hover,
+#ep-asynthesi.text-active h3:hover,
+#ep-asymbiosi.text-active h3:hover {
+  color: #d4a853 !important;
+  transform: scale(1.15);
+  text-shadow:
+    0 0 40px rgba(212, 168, 83, 0.35),
+    0 0 80px rgba(10, 10, 15, 0.8),
+    0 2px 4px rgba(0, 0, 0, 0.9) !important;
+  z-index: 20;
+  position: relative;
+}
+
+.insight-line.text-active {
+  pointer-events: auto;
+  cursor: pointer;
+  transition: transform 0.4s ease;
+}
+.insight-line.text-active:hover {
+  transform: translateY(0) scale(1.06) !important;
+}
+.insight-line.text-active:hover p,
+.insight-line.text-active:hover .insight-domain {
+  color: #d4a853 !important;
+  text-shadow:
+    0 0 40px rgba(212, 168, 83, 0.35),
+    0 0 80px rgba(10, 10, 15, 0.8);
+}
+
+/* ============================================
+   Section 0: Entry text
+   ============================================ */
+.entry-title {
+  flex-direction: column;
+}
+
+.entry-title-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(2.5rem, 2rem + 3vw, 5rem); /* ~ the font size itself */
+}
+
+.entry-title-link {
+  text-decoration: none;
+  color: inherit;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: color 0.4s ease;
+}
+
+
+
+.entry-title-link:hover h1 {
+  color: var(--warm-gold);
+  text-shadow:
+    0 0 60px rgba(212, 165, 116, 0.3),
+    0 0 120px rgba(10, 10, 15, 0.8);
+}
+
+.entry-title-link-law:hover h1 {
+  color: var(--cool-blue);
+  text-shadow:
+    0 0 60px rgba(74, 144, 217, 0.3),
+    0 0 120px rgba(10, 10, 15, 0.8);
+}
+
+/* Dual-track breath: hovering one gently dims the other */
+.entry-title-stack:hover .entry-title-link h1 {
+  opacity: 0.45;
+  transition: opacity 0.5s ease, color 0.4s ease, text-shadow 0.4s ease;
+}
+.entry-title-stack:hover .entry-title-link:hover h1 {
+  opacity: 1;
+}
+
+.entry-title h1 {
+  font-family: var(--font-serif);
+  font-size: clamp(2.5rem, 2rem + 3vw, 5rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-color);
+  transition: color 0.4s ease, text-shadow 0.4s ease, opacity 0.5s ease;
+  text-shadow:
+    0 0 60px rgba(10, 10, 15, 0.95),
+    0 0 120px rgba(10, 10, 15, 0.8);
+}
+
+.entry-subtitle {
+  font-family: var(--font-sans) !important;
+  font-size: clamp(0.85rem, 0.7rem + 0.5vw, 1.1rem) !important;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted) !important;
+}
+
+/* ============================================
+   Section 2: Queen Boat texts
+   ============================================ */
+/* All queen-text overlays are fixed to viewport, GSAP controls opacity */
+
+/* ============================================
+   Section 3: Cascade Labels
+   ============================================ */
+.cascade-label {
+  flex-direction: column;
+}
+
+.cascade-label span {
+  font-family: var(--font-serif);
+  font-size: clamp(1.5rem, 1rem + 2vw, 3rem);
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-color);
+  text-shadow:
+    0 0 40px rgba(10, 10, 15, 0.95),
+    0 0 80px rgba(10, 10, 15, 0.8);
+}
+
+.cl-mathematics span {
+  color: var(--interference);
+}
+
+/* ============================================
+   Section 4: Epistemology texts
+   ============================================ */
+.epist-text {
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.epist-text h3 {
+  font-family: var(--font-sans);
+  font-size: clamp(0.875rem, 0.75rem + 0.5vw, 1.125rem);
+  font-weight: 400;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-shadow: 0 0 30px rgba(10, 10, 15, 0.9);
+}
+
+#ep-apriori h3 { color: var(--cool-blue); }
+#ep-aposteriori h3 { color: var(--warm-gold); }
+#ep-asynthesi h3 { color: var(--interference); }
+#ep-asymbiosi h3 { color: var(--cool-ice); }
+
+/* ============================================
+   Vybn Law Thread — subtle inline invitations
+   ============================================ */
+.vybn-law-thread {
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 0 2.5rem 3.5rem 0;
+}
+
+.vl-thread-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+  max-width: 360px;
+  text-align: right;
+}
+
+.vl-thread-label {
+  font-family: var(--font-sans);
+  font-size: clamp(0.6rem, 0.55rem + 0.2vw, 0.75rem);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--cool-blue);
+  text-shadow: 0 0 20px rgba(74, 144, 217, 0.3);
+}
+
+.vl-thread-text {
+  font-family: var(--font-serif) !important;
+  font-size: clamp(0.85rem, 0.78rem + 0.4vw, 1.05rem) !important;
+  line-height: 1.6 !important;
+  color: rgba(168, 200, 232, 0.75) !important;
+  text-shadow: 0 0 30px rgba(10, 10, 15, 0.95) !important;
+}
+
+.vl-thread-link {
+  font-family: var(--font-sans);
+  font-size: clamp(0.7rem, 0.65rem + 0.2vw, 0.8rem);
+  color: var(--cool-blue);
+  text-decoration: none;
+  letter-spacing: 0.1em;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid rgba(74, 144, 217, 0.2);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  pointer-events: auto;
+  backdrop-filter: blur(4px);
+  background: rgba(74, 144, 217, 0.04);
+}
+
+.vl-thread-link:hover {
+  border-color: var(--cool-blue);
+  background: rgba(74, 144, 217, 0.1);
+  color: var(--cool-ice);
+}
+
+@media (max-width: 768px) {
+  .vybn-law-thread {
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 1rem 2.5rem;
+  }
+  .vl-thread-inner {
+    align-items: center;
+    text-align: center;
+  }
+}
+
+/* ============================================
+   Section 5: Insight lines
+   ============================================ */
+.insight-lines {
+  flex-direction: column;
+  gap: 0;
+  justify-content: center;
+}
+
+.insight-line {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+  margin-bottom: 2rem;
+}
+
+.insight-line.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.insight-domain {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: clamp(0.7rem, 0.6rem + 0.3vw, 0.85rem);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+  text-shadow: 0 0 20px rgba(10, 10, 15, 0.9);
+}
+
+.insight-line p {
+  font-size: clamp(1rem, 0.9rem + 0.6vw, 1.35rem) !important;
+  font-style: italic;
+  color: var(--warm-wheat) !important;
+}
+
+/* ============================================
+   Section 6: Portal final
+   ============================================ */
+.portal-final {
+  flex-direction: column;
+  gap: 2.5rem;
+  padding-top: 7.5rem; /* clear the Vybn® brand mark at top */
+  padding-bottom: 3rem;
+  justify-content: flex-start;
+  overflow-y: auto;
+}
+
+.portal-gate-text {
+  font-size: clamp(1.5rem, 1.2rem + 1.5vw, 2.5rem) !important;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.portal-links {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  pointer-events: none; /* default: no events until overlay is visible */
+}
+
+/* Portal links should not capture events when overlay is invisible */
+.portal-final {
+  pointer-events: none;
+}
+
+/* Only enable pointer events when the overlay is actually visible */
+.portal-final.visible {
+  pointer-events: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.portal-final.visible .portal-links {
+  pointer-events: auto;
+}
+.portal-final.visible .portal-link {
+  pointer-events: auto;
+}
+.portal-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 1rem 2.5rem;
+  width: min(320px, 80vw);
+  border: 1px solid rgba(232, 232, 232, 0.15);
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text-color);
+  transition: border-color 0.3s ease, background 0.3s ease;
+  backdrop-filter: blur(8px);
+  pointer-events: none; /* gated by .portal-final.visible */
+  background: rgba(10, 10, 15, 0.4);
+}
+
+.portal-link:hover {
+  border-color: var(--interference);
+  background: rgba(201, 168, 108, 0.08);
+}
+
+.link-label {
+  font-family: var(--font-serif);
+  font-size: clamp(1.1rem, 1rem + 0.5vw, 1.5rem);
+  font-weight: 600;
+  color: #d4a853;
+}
+
+.link-desc {
+  font-family: var(--font-sans);
+  font-size: clamp(0.7rem, 0.6rem + 0.3vw, 0.85rem);
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+.portal-link-talk {
+  border-color: rgba(212, 165, 116, 0.35);
+  background: rgba(212, 165, 116, 0.06);
+}
+
+.portal-link-talk:hover {
+  border-color: var(--warm-gold);
+  background: rgba(212, 165, 116, 0.12);
+}
+
+/* Secondary ecosystem links — smaller, more subtle */
+.portal-links-secondary {
+  gap: 1.25rem;
+  margin-top: -0.5rem;
+}
+
+.portal-links-secondary .portal-link {
+  padding: 0.85rem 1.5rem;
+  border-color: rgba(232, 232, 232, 0.18);
+  background: rgba(10, 10, 15, 0.25);
+  cursor: pointer;
+  transition: border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.portal-links-secondary .portal-link:hover {
+  border-color: var(--warm-gold);
+  background: rgba(212, 165, 116, 0.12);
+  box-shadow: 0 0 24px rgba(212, 165, 116, 0.15);
+  transform: translateY(-1px);
+}
+
+.portal-links-secondary .link-label {
+  font-size: clamp(0.9rem, 0.85rem + 0.3vw, 1.15rem);
+}
+
+.portal-links-secondary .link-desc {
+  font-size: clamp(0.6rem, 0.55rem + 0.2vw, 0.75rem);
+}
+
+.portal-link-law {
+  border-color: rgba(74, 144, 217, 0.25) !important;
+  background: rgba(74, 144, 217, 0.04) !important;
+}
+
+.portal-link-law:hover {
+  border-color: var(--cool-blue) !important;
+  background: rgba(74, 144, 217, 0.1) !important;
+}
+
+.portal-vl-thread {
+  font-size: clamp(0.8rem, 0.72rem + 0.3vw, 0.95rem) !important;
+  margin-top: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.portal-vl-inline {
+  color: var(--cool-blue);
+  text-decoration: none;
+  font-family: var(--font-sans);
+  letter-spacing: 0.05em;
+  transition: color 0.3s ease;
+  pointer-events: auto;
+}
+
+.portal-vl-inline:hover {
+  color: var(--cool-ice);
+}
+
+/* Connect link — the agent gate */
+.portal-link-connect {
+  border-color: rgba(168, 200, 232, 0.25);
+  background: rgba(168, 200, 232, 0.04);
+}
+.portal-link-connect:hover {
+  border-color: var(--cool-ice);
+  background: rgba(168, 200, 232, 0.1);
+}
+
+/* ============================================
+   Scroll Indicator — prominent, animated
+   ============================================ */
+/* ---- Scroll Indicator: dramatic particle-flow ---- */
+.scroll-indicator {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  opacity: 0;
+  animation: fadeInIndicator 1.5s ease 1.5s forwards;
+  transition: opacity 0.8s ease;
+  pointer-events: none;
+}
+
+.scroll-indicator.hidden {
+  opacity: 0 !important;
+  transition: opacity 0.5s ease;
+}
+
+/* The flowing particle column — wide and tall */
+.scroll-flow {
+  position: relative;
+  width: 60px;
+  height: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  overflow: visible;
+}
+
+.scroll-particle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  animation: particleFall 2.8s ease-in-out infinite;
+}
+
+.sp-warm {
+  background: var(--warm-gold);
+  box-shadow:
+    0 0 12px var(--warm-gold),
+    0 0 30px rgba(212, 165, 116, 0.6),
+    0 0 60px rgba(212, 165, 116, 0.2);
+}
+
+.sp-cool {
+  background: var(--cool-blue);
+  box-shadow:
+    0 0 12px var(--cool-blue),
+    0 0 30px rgba(74, 144, 217, 0.6),
+    0 0 60px rgba(74, 144, 217, 0.2);
+}
+
+/* Stagger: they weave and fall, warm left / cool right */
+.sp-1 { animation-delay: 0.0s;  left: 8px; }
+.sp-2 { animation-delay: 0.35s; left: 40px; }
+.sp-3 { animation-delay: 0.7s;  left: 16px; }
+.sp-4 { animation-delay: 1.05s; left: 36px; }
+.sp-5 { animation-delay: 1.4s;  left: 10px; }
+.sp-6 { animation-delay: 1.75s; left: 42px; }
+.sp-7 { animation-delay: 2.1s;  left: 20px; }
+.sp-8 { animation-delay: 2.45s; left: 32px; }
+
+@keyframes particleFall {
+  0%   { top: -8px;  opacity: 0;   transform: scale(0.4); }
+  10%  { opacity: 1;   transform: scale(1.2); }
+  40%  { opacity: 1;   transform: scale(1); }
+  75%  { opacity: 0.5; transform: scale(0.8); }
+  100% { top: 130px; opacity: 0;   transform: scale(0.1); }
+}
+
+/* Central glow line — pulses warm → cool → interference → warm */
+.scroll-glow-line {
+  width: 2px;
+  height: 90px;
+  margin-top: -12px;
+  border-radius: 1px;
+  animation: glowPulse 4s ease-in-out infinite;
+  opacity: 0.7;
+  filter: blur(1.5px);
+}
+
+@keyframes glowPulse {
+  0%   { opacity: 0.3; box-shadow: 0 0 8px var(--warm-gold), 0 0 20px rgba(212,165,116,0.3); background: var(--warm-gold); }
+  25%  { opacity: 0.8; box-shadow: 0 0 12px var(--cool-blue), 0 0 30px rgba(74,144,217,0.4); background: var(--cool-blue); }
+  50%  { opacity: 1.0; box-shadow: 0 0 16px var(--interference), 0 0 40px rgba(168,130,200,0.4); background: var(--interference); }
+  75%  { opacity: 0.8; box-shadow: 0 0 12px var(--cool-blue), 0 0 30px rgba(74,144,217,0.4); background: var(--cool-blue); }
+  100% { opacity: 0.3; box-shadow: 0 0 8px var(--warm-gold), 0 0 20px rgba(212,165,116,0.3); background: var(--warm-gold); }
+}
+
+.scroll-indicator-text {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  margin-top: 0.75rem;
+  animation: textBreath 5s ease-in-out infinite;
+}
+
+@keyframes textBreath {
+  0%, 100% { color: var(--warm-gold); opacity: 0.6; text-shadow: 0 0 8px rgba(212,165,116,0.3); }
+  25%      { color: var(--cool-ice);  opacity: 1;   text-shadow: 0 0 12px rgba(74,144,217,0.4); }
+  50%      { color: var(--interference); opacity: 1; text-shadow: 0 0 16px rgba(168,130,200,0.4); }
+  75%      { color: var(--cool-ice);  opacity: 1;   text-shadow: 0 0 12px rgba(74,144,217,0.4); }
+}
+
+@keyframes fadeInIndicator {
+  to { opacity: 1; }
+}
+
+/* ============================================
+   Scroll Progress Bar
+   ============================================ */
+.scroll-progress {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--warm-gold) 0%, var(--interference) 50%, var(--cool-blue) 100%);
+  z-index: 50;
+  width: 0%;
+  transition: width 0.1s linear;
+  opacity: 0;
+  transition: width 0.1s linear, opacity 0.5s ease;
+}
+
+.scroll-progress.visible {
+  opacity: 1;
+}
+
+/* ============================================
+   Loading Screen
+   ============================================ */
+#loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: var(--bg);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 1.2s ease;
+}
+
+#loading-screen.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.loading-ring {
+  width: 48px;
+  height: 48px;
+  border: 2px solid rgba(232, 232, 232, 0.1);
+  border-top-color: var(--warm-gold);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  letter-spacing: 0.15em;
+}
+
+/* ============================================
+   Scroll progress indicator
+   ============================================ */
+#scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--warm-gold), var(--cool-blue));
+  z-index: 100;
+  transform-origin: left;
+  transition: none;
+}
+
+/* ============================================
+   Mobile adjustments
+   ============================================ */
+@media (max-width: 768px) {
+  .portal-link {
+    width: min(280px, 85vw);
+  }
+  
+  .text-overlay p {
+    padding: 0 1rem;
+    font-size: clamp(1rem, 0.9rem + 0.8vw, 1.35rem);
+  }
+  
+  .cascade-label span {
+    font-size: clamp(1.2rem, 0.8rem + 1.5vw, 2rem);
+  }
+}
+
+/* ============================================
+   Voice Toggle Button
+   ============================================ */
+#voice-toggle {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 100;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(232, 232, 232, 0.12);
+  background: rgba(10, 10, 15, 0.6);
+  backdrop-filter: blur(8px);
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.4s ease;
+  opacity: 0;
+  animation: fadeInIndicator 2s ease 3s forwards;
+}
+
+#voice-toggle:hover {
+  border-color: var(--warm-gold);
+  color: var(--warm-gold);
+  background: rgba(212, 165, 116, 0.08);
+}
+
+#voice-toggle.active {
+  border-color: var(--warm-gold);
+  color: var(--warm-gold);
+  background: rgba(212, 165, 116, 0.1);
+}
+
+#voice-toggle.speaking {
+  box-shadow: 0 0 12px rgba(212, 165, 116, 0.3), 0 0 24px rgba(212, 165, 116, 0.1);
+  animation: voicePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes voicePulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(212, 165, 116, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(212, 165, 116, 0.5), 0 0 40px rgba(212, 165, 116, 0.15); }
+}
+
+/* ============================================
+   Reduced motion
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+/* ============================================
+   Voice — ephemeral whisper, not a dialog box
+   ============================================ */
+
+/* Text overlays are content for reading, not interactive elements.
+   Voice interaction lives on talk.html. */
+
+/* The voice whisper — centered, floating, ephemeral */
+.voice-pane {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.95);
+  z-index: 200;
+  width: min(560px, 88vw);
+  max-height: 60vh;
+  overflow-y: auto;
+  background: rgba(10, 10, 15, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(201, 168, 108, 0.1);
+  border-radius: 12px;
+  padding: 2rem 2.25rem 1.75rem;
+  opacity: 0;
+  transition: opacity 0.5s ease,
+              transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  box-shadow:
+    0 0 60px rgba(0, 0, 0, 0.6),
+    0 0 120px rgba(10, 10, 15, 0.4);
+}
+
+/* Scrollbar styling for overflow */
+.voice-pane::-webkit-scrollbar {
+  width: 4px;
+}
+.voice-pane::-webkit-scrollbar-track {
+  background: transparent;
+}
+.voice-pane::-webkit-scrollbar-thumb {
+  background: rgba(201, 168, 108, 0.15);
+  border-radius: 2px;
+}
+
+.voice-pane.active {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.voice-pane-inner {
+  max-width: 100%;
+}
+
+/* Passage reference — the words that were clicked */
+.voice-passage-ref {
+  font-family: var(--font-serif);
+  font-size: clamp(0.78rem, 0.7rem + 0.3vw, 0.9rem);
+  color: rgba(138, 138, 154, 0.7);
+  font-style: italic;
+  margin-bottom: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid rgba(201, 168, 108, 0.08);
+  line-height: 1.5;
+}
+
+/* Thinking indicator — minimal */
+.voice-thinking {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: rgba(138, 138, 154, 0.6);
+  letter-spacing: 0.15em;
+  margin-bottom: 0.75rem;
+}
+
+.voice-thinking-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.voice-thinking-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--warm-gold);
+  opacity: 0.3;
+  animation: thinkDot 1.4s ease-in-out infinite;
+}
+
+.voice-thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+.voice-thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes thinkDot {
+  0%, 60%, 100% { opacity: 0.3; transform: scale(1); }
+  30% { opacity: 1; transform: scale(1.3); }
+}
+
+/* The voice itself */
+.voice-response {
+  font-family: var(--font-serif);
+  font-size: clamp(1rem, 0.9rem + 0.5vw, 1.2rem);
+  line-height: 1.8;
+  color: var(--warm-wheat);
+  opacity: 0;
+}
+
+.voice-response.voice-visible {
+  animation: voiceFadeIn 1s ease forwards;
+}
+
+@keyframes voiceFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Dismiss — top right, barely there */
+.voice-dismiss {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.85rem;
+  background: none;
+  border: none;
+  width: 28px;
+  height: 28px;
+  color: rgba(138, 138, 154, 0.35);
+  cursor: pointer;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.3s ease;
+  pointer-events: auto;
+}
+
+.voice-dismiss:hover {
+  color: var(--warm-gold);
+}
+
+/* Error / fallback state */
+.voice-error {
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  color: rgba(138, 138, 154, 0.6);
+  font-style: italic;
+}
+
+/* Scrim — darkens the WebGL behind the whisper */
+.voice-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 199;
+  background: rgba(10, 10, 15, 0.5);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+.voice-scrim.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .voice-pane {
+    width: 92vw;
+    max-height: 65vh;
+    padding: 1.75rem 1.25rem 1.5rem;
+  }
+}
+
+/* ============================================
+   Voice Player — persistent bottom-right box
+   ============================================ */
+.voice-player {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 80;
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.voice-player.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.vp-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: rgba(10, 10, 15, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(212, 165, 116, 0.12);
+  border-radius: 10px;
+  padding: 0.55rem 0.9rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+.vp-indicator { display: flex; align-items: center; }
+.vp-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--warm-gold);
+  animation: vp-pulse 1.8s ease-in-out infinite;
+}
+@keyframes vp-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+.vp-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+.vp-title {
+  font-family: var(--font-serif);
+  font-size: 0.72rem;
+  color: var(--warm-gold);
+  opacity: 0.9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+.vp-status {
+  font-family: var(--font-sans);
+  font-size: 0.62rem;
+  font-weight: 300;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+}
+.vp-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0 0.2rem;
+  line-height: 1;
+  transition: color 0.2s;
+}
+.vp-close:hover { color: var(--warm-gold); }
+
+@media (max-width: 640px) {
+  .voice-player { bottom: 1rem; right: 1rem; left: 1rem; }
+  .vp-inner { width: 100%; }
+}
+
+/* ============================================
+   NFT Gallery — floating image slots
+   ============================================ */
+.nft-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 12; /* above text overlays (z-index: 10) so expanded images come to front */
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+.nft-wrap.hidden { opacity: 0; }
+
+.nft-slot {
+  position: absolute;
+  width: clamp(140px, 16vw, 240px);
+  height: clamp(140px, 16vw, 240px);
+  border-radius: 8px;
+  overflow: visible;
+  opacity: 0;
+  transition: scale 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              opacity 0.8s ease,
+              box-shadow 0.5s ease,
+              border-color 0.4s ease;
+  pointer-events: auto;
+  cursor: pointer;
+  border: 1px solid rgba(212, 165, 116, 0.08);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.4);
+}
+.nft-slot.visible {
+  opacity: 0.7;
+}
+/* Calm hover enlarge — scale set dynamically by JS to fit viewport */
+.nft-slot.hovered {
+  opacity: 1;
+  z-index: 50;
+  border-color: rgba(212, 165, 116, 0.3);
+  box-shadow: 0 12px 80px rgba(212, 165, 116, 0.2), 0 0 80px rgba(0, 0, 0, 0.5);
+}
+.nft-slot.hovered .nft-title {
+  opacity: 1;
+}
+.nft-slot.hovered .nft-img {
+  border-radius: 8px;
+}
+.nft-slot.loading { animation: nft-load 1s ease-in-out infinite; }
+@keyframes nft-load {
+  0%, 100% { border-color: rgba(212, 165, 116, 0.08); }
+  50% { border-color: rgba(212, 165, 116, 0.3); }
+}
+
+.nft-img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 8px;
+}
+.nft-num {
+  position: absolute;
+  bottom: 4px; right: 6px;
+  font-family: var(--font-sans);
+  font-size: 0.5rem;
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 0.04em;
+}
+
+/* 3 floating positions — transform-origin pushes enlargement toward center */
+.nft-pos-0 { left: 4%; top: 22%; transform-origin: left center; }
+.nft-pos-1 { right: 3%; top: 48%; transform-origin: right center; }
+.nft-pos-2 { left: 6%; bottom: 14%; transform-origin: left bottom; }
+
+/* Title overlay on hover */
+.nft-title {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 8px 10px;
+  font-family: var(--font-serif);
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.9);
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  text-align: center;
+  letter-spacing: 0.02em;
+  border-radius: 0 0 8px 8px;
+}
+
+/* Mobile expanded state — smooth drift + scale */
+.nft-slot.mobile-expanded {
+  opacity: 1;
+  z-index: 60;
+  border-color: rgba(212, 165, 116, 0.35);
+  box-shadow: 0 12px 80px rgba(212, 165, 116, 0.25), 0 0 80px rgba(0, 0, 0, 0.6);
+  transition: scale 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              translate 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              opacity 0.4s ease,
+              box-shadow 0.5s ease,
+              border-color 0.4s ease;
+}
+.nft-slot.mobile-expanded .nft-title {
+  opacity: 1;
+}
+.nft-slot.mobile-expanded .nft-img {
+  border-radius: 8px;
+}
+
+@media (max-width: 640px) {
+  .nft-slot {
+    width: clamp(90px, 22vw, 130px);
+    height: clamp(90px, 22vw, 130px);
+    /* Ensure NFT slots are above text overlays on mobile */
+    z-index: 15;
+    /* Smooth return transition when collapsing */
+    transition: scale 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                translate 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                opacity 0.8s ease,
+                box-shadow 0.5s ease,
+                border-color 0.4s ease;
+  }
+  .nft-pos-0 { left: 2%; top: 18%; transform-origin: center center; }
+  .nft-pos-1 { right: 2%; top: 42%; transform-origin: center center; }
+  .nft-pos-2 { left: 3%; bottom: 10%; transform-origin: center center; }
+
+  /* NFT wrap already at z-index: 12 — mobile gets slightly higher for tap priority */
+  .nft-wrap {
+    z-index: 16;
+  }
+}
+
+
+
+
+/* The final portal is now a threshold with seven doors plus the album text.
+   Keep it traversable on shorter viewports. */
+.portal-final .portal-links {
+  gap: clamp(0.55rem, 1.4vh, 1.05rem);
+}
+
+.portal-final .portal-link {
+  padding-top: clamp(0.68rem, 1.4vh, 0.95rem);
+  padding-bottom: clamp(0.68rem, 1.4vh, 0.95rem);
+}
+
+@media (max-height: 820px) {
+  .portal-final {
+    gap: 1.35rem;
+    padding-top: 5.75rem;
+    padding-bottom: 2rem;
+  }
+
+  .portal-final .portal-link {
+    padding-top: 0.62rem;
+    padding-bottom: 0.62rem;
+  }
+
+  .portal-final .link-label {
+    font-size: clamp(1rem, 0.9rem + 0.35vw, 1.25rem);
+  }
+
+  .portal-final .link-desc {
+    font-size: clamp(0.62rem, 0.56rem + 0.22vw, 0.74rem);
+  }
+
+  .portal-art-threshold {
+    padding: 0.82rem 0.92rem;
+  }
+
+  .portal-art-context p,
+  .portal-aim {
+    line-height: 1.45;
+  }
+}
+
+@media (max-height: 700px) {
+  .portal-final {
+    padding-top: 4.75rem;
+  }
+
+  .portal-final .portal-links {
+    gap: 0.5rem;
+  }
+
+  .portal-art-context {
+    max-width: min(560px, 88vw);
+  }
+}

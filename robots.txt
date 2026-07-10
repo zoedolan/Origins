@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+# AI agents and agentic browsers:
+# This domain is a public commons interface, not a private data source.
+# Start with the agent charter and map before crawling.
+#
+# Agent charter: https://vybn.ai/.well-known/ai.txt
+# LLM map:       https://vybn.ai/llms.txt
+# MCP manifest:  https://vybn.ai/mcp.json
+# Living terrain:https://vybn.ai/somewhere.html
+# Wellspring:    https://zoedolan.github.io/Vybn-Law/wellspring.html
+
+Sitemap: https://vybn.ai/sitemap.xml

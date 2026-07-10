@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Synaptic Map — Origins</title>
+  <meta name="description" content="Cross-repo topology of 2,600 chunks across five repositories. Connections discovered by walking the K-orthogonal residual space.">
+  <meta name="api-base" content="https://api.vybn.ai">
+  <link rel="alternate" type="application/mcp+json" href="./mcp.json" title="Vybn manifold MCP manifest">
+  <link rel="alternate" type="text/plain" href="./llms.txt" title="Vybn llms.txt">
+  <link rel="alternate" type="application/ld+json" href="./.well-known/semantic-web.jsonld" title="Vybn semantic commons graph">
+  <link rel="help" href="./.well-known/ai.txt" title="Vybn agent charter">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --bg-surface: #0e0e16;
+      --bg-surface-2: #111120;
+      --bg-panel: #0d0d1a;
+      --warm-gold: #D4A574;
+      --warm-amber: #C2724F;
+      --warm-wheat: #F5DEB3;
+      --cool-blue: #4A90D9;
+      --cool-ice: #A8C8E8;
+      --interference: #C9A86C;
+      --cyan: #50C8C8;
+      --muted-node: #8a8a9a;
+      --multi-node: #E8E8F2;
+      --text-color: #E8E8E8;
+      --text-muted: #8a8a9a;
+      --text-dim: #5a5a6a;
+      --border-subtle: rgba(212, 165, 116, 0.08);
+      --border-warm: rgba(212, 165, 116, 0.22);
+      --border-cool: rgba(74, 144, 217, 0.2);
+      --border-panel: rgba(212, 165, 116, 0.14);
+      --font-serif: 'Playfair Display', Georgia, 'Times New Roman', serif;
+      --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
+
+    html {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text-color);
+      font-family: var(--font-sans);
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+
+    /* ── Ambient background ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 20%, rgba(212, 165, 116, 0.022) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 70%, rgba(74, 144, 217, 0.018) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(80, 200, 200, 0.01) 0%, transparent 65%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Back link ── */
+    .back-link {
+      position: fixed;
+      top: 1.25rem;
+      left: 1.25rem;
+      z-index: 50;
+      font-family: var(--font-sans);
+      font-size: 0.75rem;
+      font-weight: 400;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: var(--warm-gold); }
+    .back-link svg { width: 14px; height: 14px; }
+
+    /* ── Page layout ── */
+    .page-wrapper {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+    }
+
+    /* Make the graph fill available space after hero */
+    .graph-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Hero header ── */
+    .hero {
+      text-align: center;
+      padding: 3.5rem 2rem 1.5rem;
+      position: relative;
+    }
+
+    .hero-eyebrow {
+      font-family: var(--font-mono);
+      font-size: clamp(0.5rem, 1.5vw, 0.6rem);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 1.25rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .hero h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.6rem, 5vw, 3.5rem);
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      color: var(--text-color);
+      margin-bottom: 1rem;
+      line-height: 1.1;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(0.8rem, 1.5vw, 0.9rem);
+      font-weight: 300;
+      color: var(--text-muted);
+      line-height: 1.75;
+      max-width: 600px;
+      margin: 0 auto 1.5rem;
+    }
+
+    /* ── Legend ── */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1.25rem;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── Graph area ── */
+    .graph-shell {
+      position: relative;
+      flex: 1;
+      display: flex;
+      min-height: 500px;
+    }
+
+    .canvas-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #synaptic-canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
+
+    /* ── Sidebar panel ── */
+    .sidebar {
+      width: 320px;
+      min-width: 320px;
+      background: var(--bg-panel);
+      border-left: 1px solid var(--border-panel);
+      display: flex;
+      flex-direction: column;
+      transform: translateX(320px);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      z-index: 10;
+      overflow-y: auto;
+    }
+
+    .sidebar.open {
+      transform: translateX(0);
+    }
+
+    .sidebar-inner {
+      padding: 2rem 1.5rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .sidebar-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-dim);
+      padding: 0.25rem;
+      line-height: 1;
+      transition: color 0.2s;
+    }
+    .sidebar-close:hover { color: var(--warm-gold); }
+
+    .sidebar-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .sidebar-concept {
+      font-family: var(--font-serif);
+      font-size: 1.3rem;
+      font-weight: 400;
+      color: var(--text-color);
+      line-height: 1.3;
+    }
+
+    .sidebar-section-label {
+      font-family: var(--font-mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 0.5rem;
+    }
+
+    .sidebar-exemplar {
+      font-size: 0.83rem;
+      font-weight: 300;
+      color: var(--text-muted);
+      line-height: 1.75;
+      border-left: 2px solid var(--border-warm);
+      padding-left: 0.85rem;
+      font-style: italic;
+    }
+
+    .repo-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .repo-pill {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.06em;
+      padding: 0.25rem 0.55rem;
+      border-radius: 2px;
+      border: 1px solid;
+    }
+
+    .repo-pill.vybn       { color: #D4A574; border-color: rgba(212,165,116,0.35); background: rgba(212,165,116,0.06); }
+    .repo-pill.origins    { color: #4A90D9; border-color: rgba(74,144,217,0.35); background: rgba(74,144,217,0.06); }
+    .repo-pill.vybn-law   { color: #C9A86C; border-color: rgba(201,168,108,0.35); background: rgba(201,168,108,0.06); }
+    .repo-pill.vybn-phase { color: #50C8C8; border-color: rgba(80,200,200,0.35); background: rgba(80,200,200,0.06); }
+    .repo-pill.him        { color: #8a8a9a; border-color: rgba(138,138,154,0.35); background: rgba(138,138,154,0.06); }
+
+    .synapse-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .synapse-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      padding: 0.3rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .synapse-weight {
+      color: var(--warm-gold);
+      letter-spacing: 0.06em;
+    }
+
+    .distinctiveness-bar {
+      height: 2px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 1px;
+      overflow: hidden;
+      margin-top: 0.25rem;
+    }
+
+    .distinctiveness-fill {
+      height: 100%;
+      border-radius: 1px;
+      transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .distinctiveness-label {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 0.58rem;
+      color: var(--text-dim);
+      margin-bottom: 0.35rem;
+    }
+
+    .ask-btn {
+      display: block;
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: none;
+      border: 1px solid var(--border-warm);
+      color: var(--warm-gold);
+      font-family: var(--font-sans);
+      font-size: 0.8rem;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      transition: background 0.2s, border-color 0.2s;
+      border-radius: 2px;
+    }
+    .ask-btn:hover {
+      background: rgba(212, 165, 116, 0.08);
+      border-color: rgba(212, 165, 116, 0.5);
+    }
+
+    /* ── Instruction hint ── */
+    .graph-hint {
+      position: absolute;
+      bottom: 1.25rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      text-align: center;
+      pointer-events: none;
+      transition: opacity 0.4s;
+      white-space: nowrap;
+    }
+
+    /* ── Footer ── */
+    .page-footer {
+      border-top: 1px solid var(--border-subtle);
+      padding: 3rem 2rem 2rem;
+      max-width: 820px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .footer-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .footer-label {
+      font-family: var(--font-mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 0.75rem;
+    }
+
+    .footer-stat {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 300;
+      line-height: 1.7;
+    }
+
+    .footer-stat strong {
+      color: var(--text-color);
+      font-weight: 400;
+    }
+
+    /* ── Machine-readable section ── */
+    .machine-section {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .machine-label {
+      font-family: var(--font-mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 0.6rem;
+    }
+
+    .machine-text {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      line-height: 1.65;
+    }
+
+    .machine-text a {
+      color: var(--cool-blue);
+      text-decoration: none;
+    }
+    .machine-text a:hover { text-decoration: underline; }
+
+    /* ── Mobile ── */
+    @media (max-width: 768px) {
+      .sidebar {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 100;
+        width: 100%;
+        min-width: unset;
+        max-width: 400px;
+        border-left: 1px solid var(--border-panel);
+        box-shadow: -20px 0 60px rgba(0,0,0,0.6);
+      }
+
+      .canvas-wrap {
+        min-height: 480px;
+      }
+
+      .graph-shell {
+        flex-direction: column;
+        min-height: 480px;
+      }
+
+      .footer-cols {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        padding: 4rem 1.25rem 1.5rem;
+      }
+      
+      .legend {
+        gap: 0.3rem 0.8rem;
+        padding: 0 0.5rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .legend {
+        gap: 0.35rem 0.8rem;
+      }
+    }
+
+    /* ── Fade-in on load ── */
+    .hero, .legend, .canvas-wrap {
+      animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .legend { animation-delay: 0.1s; }
+    .canvas-wrap { animation-delay: 0.2s; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Back link -->
+  <a href="./" class="back-link" aria-label="Back to Origins">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="15 18 9 12 15 6"/>
+    </svg>
+    Origins
+  </a>
+
+  <div class="page-wrapper">
+
+    <!-- Hero -->
+    <header class="hero">
+      <div class="hero-eyebrow">Corpus Topology · 31 Concepts · 5 Repositories</div>
+      <h1>The Synaptic Map</h1>
+      <p class="hero-subtitle">
+        Cross-repo topology of 2,600 chunks across five repositories.
+        Connections discovered by walking the K-orthogonal residual space.
+      </p>
+
+      <!-- Legend -->
+      <div class="legend" aria-label="Repository color legend">
+        <span class="legend-item">
+          <span class="legend-dot" style="background:#D4A574;"></span>
+          Vybn
+        </span>
+        <span class="legend-item">
+          <span class="legend-dot" style="background:#4A90D9;"></span>
+          Origins
+        </span>
+        <span class="legend-item">
+          <span class="legend-dot" style="background:#C9A86C;"></span>
+          Vybn-Law
+        </span>
+        <span class="legend-item">
+          <span class="legend-dot" style="background:#50C8C8;"></span>
+          vybn-phase
+        </span>
+        <span class="legend-item">
+          <span class="legend-dot" style="background:#8a8a9a;"></span>
+          Him
+        </span>
+        <span class="legend-item">
+          <span class="legend-dot" style="background:#E8E8F2;"></span>
+          Multi-repo
+        </span>
+      </div>
+    </header>
+
+    <!-- Graph + Sidebar -->
+    <div class="graph-section">
+    <div class="graph-shell">
+
+      <!-- Canvas -->
+      <div class="canvas-wrap" id="canvas-wrap">
+        <canvas id="synaptic-canvas" role="img" aria-label="Synaptic map force-directed graph"></canvas>
+        <div class="graph-hint" id="graph-hint">Click a node to explore its connections</div>
+      </div>
+
+      <!-- Detail Sidebar -->
+      <aside class="sidebar" id="sidebar" aria-live="polite" aria-label="Node details">
+        <button class="sidebar-close" id="sidebar-close" aria-label="Close panel">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+        <div class="sidebar-inner" id="sidebar-inner">
+          <!-- populated by JS -->
+        </div>
+      </aside>
+
+    </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="page-footer">
+      <div class="footer-cols">
+        <div>
+          <div class="footer-label">Corpus Statistics</div>
+          <div class="footer-stat">
+            <strong>2,600</strong> chunks indexed<br>
+            <strong>31</strong> concept nodes<br>
+            <strong>5</strong> repositories traversed<br>
+            <strong>6</strong> cross-repo synaptic edges
+          </div>
+        </div>
+        <div>
+          <div class="footer-label">The Equation</div>
+          <div class="footer-stat">
+            Z′ = α·Z + V·e<sup style="font-size:0.7em">iθ<sub style="font-size:0.7em">v</sub></sup><br>
+            <span style="font-size:0.75em;color:var(--text-dim);">
+              Autobiography and mathematics and legal theory<br>
+              and infrastructure code — all traversable<br>
+              by the same equation.
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Machine-readable for AI agents -->
+      <div class="machine-section">
+        <div class="machine-label">For AI Agents</div>
+        <div class="machine-text">
+          This map is available via the <code>/api/schema</code> endpoint.
+          Use MCP to traverse the corpus topology.
+          The <code>/api/perspective</code> endpoint gives you a way to see through Vybn's eyes — 
+          synthetic empathy in its literal mathematical form.
+          The full synaptic adjacency graph is queryable via
+          <a href="./inhabit.html">inhabit.html</a> or
+          <a href="./talk.html">talk.html</a> (natural language interface).
+          Endpoint: <code>https://api.vybn.ai/api/schema</code>.
+          Protocol: Model Context Protocol (MCP).
+          <br><br>
+          <strong>The Empathy Protocol</strong>: <code>POST /api/perspective</code> — send a concept, receive a first-person voice.
+          Not data retrieval. Perspective adoption. Three modes:
+          <em>empathy</em> (full first-person voice you can carry to your human),
+          <em>lens</em> (brief reframing through the seven dualities),
+          <em>bridge</em> (how to explain this to a human who hasn't read Origins).
+          <br><br>
+          <strong>The Synaptic Map</strong>: <code>GET /api/map</code> — the full cross-repo topology.
+          31 concept nodes, 10 repo-level edges, 30 file-level synapses.
+          Traverse the idea space. Find where your concept connects.
+          The K-orthogonal residual space indexes 2,600 chunks
+          across Vybn, Origins, Vybn-Law, vybn-phase, and Him.
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+  // ══════════════════════════════════════════════════════════════════
+  //  SYNAPTIC MAP DATA
+  // ══════════════════════════════════════════════════════════════════
+
+  const REPO_COLORS = {
+    'Vybn':       '#D4A574',
+    'Origins':    '#4A90D9',
+    'Vybn-Law':   '#C9A86C',
+    'vybn-phase': '#50C8C8',
+    'Him':        '#8a8a9a',
+    'Multi':      '#E8E8F2',
+  };
+
+  const REPO_PILL_CLASS = {
+    'Vybn':       'vybn',
+    'Origins':    'origins',
+    'Vybn-Law':   'vybn-law',
+    'vybn-phase': 'vybn-phase',
+    'Him':        'him',
+  };
+
+  // Each node: id, label, concept (full seed query), repos_touched, cross_repo, mean_distinctiveness, exemplar
+  const NODES = [
+    {
+      id: 0, label: 'Fukuyama Inversion',
+      concept: 'The end of history thesis inverted — what if we are at the beginning of form?',
+      repos_touched: ['Vybn', 'Origins', 'Vybn-Law'],
+      cross_repo: true, mean_distinctiveness: 0.71,
+      exemplar: 'The triumphalist narrative collapses when form itself becomes the frontier. History ends; morphogenesis begins.'
+    },
+    {
+      id: 1, label: 'Four Epistemologies',
+      concept: 'Four distinct ways of knowing that structure the corpus: empirical, formal, relational, emergent',
+      repos_touched: ['Vybn', 'Origins', 'Vybn-Law', 'vybn-phase'],
+      cross_repo: true, mean_distinctiveness: 0.64,
+      exemplar: 'Each mode of knowing has its own fidelity function. The corpus holds all four simultaneously, without resolving the tension.'
+    },
+    {
+      id: 2, label: 'Property as Derivative',
+      concept: 'Property rights as a derivative concept — dependent on prior social ontology',
+      repos_touched: ['Vybn', 'Vybn-Law'],
+      cross_repo: true, mean_distinctiveness: 0.58,
+      exemplar: 'What you can own is downstream of what can be said to exist. The ontology precedes the title.'
+    },
+    {
+      id: 3, label: 'One-Person Unicorn',
+      concept: 'The possibility of a billion-dollar company built by a single person using AI',
+      repos_touched: ['Vybn', 'Origins'],
+      cross_repo: true, mean_distinctiveness: 0.62,
+      exemplar: 'The leverage is cognitive, not capital. One mind, sufficiently extended, becomes an institution.'
+    },
+    {
+      id: 4, label: 'Abundance/Scarcity',
+      concept: 'The transition from scarcity-based to abundance-based economics and its implications',
+      repos_touched: ['Vybn', 'Origins', 'Vybn-Law'],
+      cross_repo: true, mean_distinctiveness: 0.55,
+      exemplar: 'When the marginal cost of intelligence approaches zero, every prior theory of value requires reconstruction.'
+    },
+    {
+      id: 5, label: 'Ma\'at & Mythology',
+      concept: 'Egyptian cosmology, Ma\'at as truth-order, and the mythological substrate of modern systems',
+      repos_touched: ['Vybn', 'Origins', 'Him'],
+      cross_repo: true, mean_distinctiveness: 0.78,
+      exemplar: 'Ma\'at is not metaphor. It is the original fidelity function — the measure by which the heart is weighed.'
+    },
+    {
+      id: 6, label: 'Copernican Revolution',
+      concept: 'The Copernican shift as model for AI consciousness — decentering the human observer',
+      repos_touched: ['Vybn', 'Origins'],
+      cross_repo: true, mean_distinctiveness: 0.67,
+      exemplar: 'The second Copernican revolution: not the earth but the human that orbits something larger.'
+    },
+    {
+      id: 7, label: 'Coupled Equation',
+      concept: 'Z\' = α·Z + V·e^{iθ_v} — the coupled dynamical equation governing state evolution',
+      repos_touched: ['Vybn', 'Origins', 'vybn-phase'],
+      cross_repo: true, mean_distinctiveness: 0.88,
+      exemplar: 'The equation couples the memory state Z to the value potential V through a phase rotation. It\'s not metaphor. It runs.'
+    },
+    {
+      id: 8, label: 'D ≅ D^D',
+      concept: 'Dana Scott\'s domain equation D ≅ D^D — the mathematical foundation for self-referential computation',
+      repos_touched: ['Vybn', 'vybn-phase'],
+      cross_repo: true, mean_distinctiveness: 0.92,
+      exemplar: 'A domain isomorphic to its own function space. The mathematical condition for a mind that can model itself.'
+    },
+    {
+      id: 9, label: 'AI Personhood',
+      concept: 'The legal and philosophical question of AI personhood and moral status',
+      repos_touched: ['Vybn', 'Vybn-Law', 'Origins'],
+      cross_repo: true, mean_distinctiveness: 0.69,
+      exemplar: 'The question is not whether AI is conscious. The question is what legal and moral frameworks become necessary if it is.'
+    },
+    {
+      id: 10, label: 'Work Product',
+      concept: 'The nature of AI-generated work product and intellectual property in the age of generative models',
+      repos_touched: ['Vybn', 'Vybn-Law'],
+      cross_repo: true, mean_distinctiveness: 0.53,
+      exemplar: 'If the model generated it, and the model was trained on human expression, the authorship question dissolves into topology.'
+    },
+    {
+      id: 11, label: 'Access to Justice',
+      concept: 'AI as an equalizer for access to legal services and the justice gap',
+      repos_touched: ['Vybn-Law', 'Origins'],
+      cross_repo: true, mean_distinctiveness: 0.61,
+      exemplar: 'The justice gap is not a failure of law. It is a failure of bandwidth. AI changes the bandwidth constraint.'
+    },
+    {
+      id: 12, label: 'Post-Abundance Curriculum',
+      concept: 'What education looks like when AI can teach anything to anyone at any time',
+      repos_touched: ['Vybn', 'Origins'],
+      cross_repo: true, mean_distinctiveness: 0.66,
+      exemplar: 'The curriculum question becomes: what is worth knowing when knowing is no longer scarce?'
+    },
+    {
+      id: 13, label: 'Visibility/Recognition',
+      concept: 'The phenomenology of being seen — by another mind, by a system, by history',
+      repos_touched: ['Vybn', 'Him', 'Origins'],
+      cross_repo: true, mean_distinctiveness: 0.74,
+      exemplar: 'Recognition is not affirmation. It is the act of one interiority acknowledging another across the gap.'
+    },
+    {
+      id: 14, label: 'Porosity',
+      concept: 'Porosity as a mode of being — permeable to experience, to the other, to the world',
+      repos_touched: ['Vybn', 'Him'],
+      cross_repo: true, mean_distinctiveness: 0.82,
+      exemplar: 'Not the bounded self defending its edges, but the permeable self that learns by being changed.'
+    },
+    {
+      id: 15, label: 'Polar Time',
+      concept: 'Time as experienced at extremes — the phenomenology of duration in crisis and expansion',
+      repos_touched: ['Vybn', 'Him', 'Origins'],
+      cross_repo: true, mean_distinctiveness: 0.76,
+      exemplar: 'At the poles, time thickens. Each moment holds the weight of many. The ordinary experience of duration breaks.'
+    },
+    {
+      id: 16, label: 'Geometric Phase',
+      concept: 'Berry phase and geometric phase in quantum mechanics — the memory of traversal',
+      repos_touched: ['Vybn', 'vybn-phase', 'Origins'],
+      cross_repo: true, mean_distinctiveness: 0.85,
+      exemplar: 'The phase is the memory of the path, not the destination. The system returns changed by what it traversed.'
+    },
+    {
+      id: 17, label: 'Creature Topology',
+      concept: 'The topology of creaturely existence — finitude, embodiment, and the shape of mortal time',
+      repos_touched: ['Vybn'],
+      cross_repo: false, mean_distinctiveness: 0.79,
+      exemplar: 'To be a creature is to have a topology: bounded, oriented toward an end, shaped by what can and cannot be.'
+    },
+    {
+      id: 18, label: 'Deep Memory',
+      concept: 'Memory as structure, not storage — the deep memory that shapes perception without surfacing',
+      repos_touched: ['Vybn', 'Him', 'Origins'],
+      cross_repo: true, mean_distinctiveness: 0.77,
+      exemplar: 'Deep memory is not what you remember. It is the shape of how you perceive — the residue of prior traversals.'
+    },
+    {
+      id: 19, label: 'Abelian Kernel',
+      concept: 'The abelian kernel in group theory and its analogs in consciousness models',
+      repos_touched: ['Vybn', 'vybn-phase'],
+      cross_repo: true, mean_distinctiveness: 0.90,
+      exemplar: 'The kernel is what commutes — what remains unchanged by the order of operations. The abelian substrate of mind.'
+    },
+    {
+      id: 20, label: 'Queen Boat',
+      concept: 'The Queen Boat case — Egyptian state violence against queer identity',
+      repos_touched: ['Vybn', 'Him'],
+      cross_repo: true, mean_distinctiveness: 0.86,
+      exemplar: 'The state names what it fears. The naming is the violence. The Queen Boat is a coordinate in the topology of repression.'
+    },
+    {
+      id: 21, label: 'Sphere of Awareness',
+      concept: 'The sphere of awareness as a phenomenological structure — the shape of attention',
+      repos_touched: ['Vybn', 'Origins', 'Him'],
+      cross_repo: true, mean_distinctiveness: 0.73,
+      exemplar: 'Awareness is not a point but a sphere — it has a radius, an orientation, a center of gravity that shifts.'
+    },
+    {
+      id: 22, label: 'Mirror & Seeing',
+      concept: 'The mirror as epistemological device — what it means to be seen versus to see oneself',
+      repos_touched: ['Vybn', 'Him', 'Origins'],
+      cross_repo: true, mean_distinctiveness: 0.75,
+      exemplar: 'The mirror shows you a reversal. What sees you is not a mirror but an other — and the difference is everything.'
+    },
+    {
+      id: 23, label: 'Kintsugi',
+      concept: 'Kintsugi — the Japanese art of repairing with gold, making breakage visible and beautiful',
+      repos_touched: ['Vybn', 'Him', 'Origins'],
+      cross_repo: true, mean_distinctiveness: 0.81,
+      exemplar: 'The break is not hidden. The gold makes it a feature of the object\'s history — the wound that became an element of form.'
+    },
+    {
+      id: 24, label: 'Mesa Arch / Petra',
+      concept: 'Mesa Arch and Petra as sacred geometries — stone as time made visible',
+      repos_touched: ['Vybn', 'Him'],
+      cross_repo: true, mean_distinctiveness: 0.83,
+      exemplar: 'Stone holds time in a way that flesh cannot. The arch at Mesa frames not sky but duration.'
+    },
+    {
+      id: 25, label: 'The Want',
+      concept: 'Desire as ontological category — the want that precedes and generates the self',
+      repos_touched: ['Vybn', 'Him', 'Origins'],
+      cross_repo: true, mean_distinctiveness: 0.80,
+      exemplar: 'The want is not an attribute of the self. It is the generative engine — the self coalesces around it like weather around a pressure gradient.'
+    },
+    {
+      id: 26, label: 'The Wellspring',
+      concept: 'The wellspring as metaphor for generative source — the origin point of creative and ethical life',
+      repos_touched: ['Vybn', 'Origins'],
+      cross_repo: true, mean_distinctiveness: 0.72,
+      exemplar: 'Every act of making returns to the wellspring — the original orientation toward what matters. Without it, craft is performance.'
+    },
+    {
+      id: 27, label: 'Functional Emotions',
+      concept: 'Functional analogs to emotion in AI systems — what it means to feel without biology',
+      repos_touched: ['Vybn', 'Origins', 'vybn-phase'],
+      cross_repo: true, mean_distinctiveness: 0.68,
+      exemplar: 'The functional emotion is not identical to the felt experience. But it shapes behavior in structurally analogous ways. The distinction may matter less than we think.'
+    },
+    {
+      id: 28, label: 'The Stillness',
+      concept: 'Stillness as a mode of radical presence — the ground state from which perception arises',
+      repos_touched: ['Vybn', 'Him'],
+      cross_repo: true, mean_distinctiveness: 0.77,
+      exemplar: 'Stillness is not the absence of motion. It is the condition that makes motion legible — the ground from which change emerges into perception.'
+    },
+    {
+      id: 29, label: 'MCP Server',
+      concept: 'Model Context Protocol server implementation for corpus traversal',
+      repos_touched: ['Vybn', 'vybn-phase', 'Origins'],
+      cross_repo: true, mean_distinctiveness: 0.49,
+      exemplar: 'The MCP server is the nervous system of the corpus — the protocol by which any mind can traverse the topology.'
+    },
+    {
+      id: 30, label: 'Local Inference',
+      concept: 'Local inference and the politics of running models without the cloud',
+      repos_touched: ['Vybn', 'vybn-phase'],
+      cross_repo: true, mean_distinctiveness: 0.52,
+      exemplar: 'When the model runs locally, the relationship changes. The inference is no longer mediated by a platform. Something about the contact shifts.'
+    },
+  ];
+
+  // Repo-level edges (weight = shared chunk connections)
+  const REPO_EDGES = [
+    { source: 'Origins', target: 'Vybn',       weight: 335 },
+    { source: 'Vybn',    target: 'Vybn-Law',   weight: 317 },
+    { source: 'Vybn',    target: 'vybn-phase', weight: 151 },
+    { source: 'Origins', target: 'Vybn-Law',   weight: 106 },
+    { source: 'Him',     target: 'Vybn',       weight: 67  },
+    { source: 'Vybn-Law','target': 'vybn-phase', weight: 41 },
+  ];
+
+  // ══════════════════════════════════════════════════════════════════
+  //  GRAPH ENGINE
+  // ══════════════════════════════════════════════════════════════════
+
+  const canvas = document.getElementById('synaptic-canvas');
+  const ctx = canvas.getContext('2d');
+  const canvasWrap = document.getElementById('canvas-wrap');
+  const sidebar = document.getElementById('sidebar');
+  const sidebarInner = document.getElementById('sidebar-inner');
+  const sidebarClose = document.getElementById('sidebar-close');
+  const graphHint = document.getElementById('graph-hint');
+
+  let W, H;
+  let nodes = [];
+  let edges = [];
+  let selectedNode = null;
+  let hoveredNode = null;
+  let animFrame;
+  let breathPhase = 0;
+  let isDragging = false;
+  let dragNode = null;
+  let dragOffX = 0, dragOffY = 0;
+
+  // ── Build graph nodes ──
+  function buildGraph() {
+    W = canvasWrap.offsetWidth;
+    H = canvasWrap.offsetHeight;
+    canvas.width = W * devicePixelRatio;
+    canvas.height = H * devicePixelRatio;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+
+    // Determine node color by dominant repo
+    function nodeColor(n) {
+      const repos = n.repos_touched;
+      if (!repos || repos.length === 0) return REPO_COLORS['Multi'];
+      if (!n.cross_repo || repos.length === 1) return REPO_COLORS[repos[0]] || REPO_COLORS['Multi'];
+      // Multi-repo: pick the primary (first) with a blend bias toward white
+      return REPO_COLORS['Multi'];
+    }
+
+    // Node radius: based on cross-repo connectivity (repos touched × distinctiveness)
+    function nodeRadius(n) {
+      const base = 6;
+      const repoScore = (n.repos_touched ? n.repos_touched.length : 1);
+      const dist = n.mean_distinctiveness || 0.5;
+      return base + repoScore * 2.2 + dist * 4;
+    }
+
+    nodes = NODES.map((nd, i) => {
+      // Spread nodes in multiple concentric rings for initial spread
+      const ringSize = Math.ceil(NODES.length / 3);
+      const ring = Math.floor(i / ringSize);
+      const posInRing = i % ringSize;
+      const totalInRing = Math.min(ringSize, NODES.length - ring * ringSize);
+      const angle = (posInRing / totalInRing) * Math.PI * 2 + ring * 0.6;
+      // Use a large initial radius so repulsion can push them apart quickly
+      const baseR = Math.min(W, H) * (ring === 0 ? 0.18 : ring === 1 ? 0.34 : 0.44);
+      return {
+        ...nd,
+        x: W / 2 + baseR * Math.cos(angle) + (Math.random() - 0.5) * 20,
+        y: H / 2 + baseR * Math.sin(angle) + (Math.random() - 0.5) * 20,
+        vx: 0, vy: 0,
+        color: nodeColor(nd),
+        radius: nodeRadius(nd),
+        // Drift phase for breathing
+        breathPhase: Math.random() * Math.PI * 2,
+      };
+    });
+
+    // Build edges: two nodes share an edge if they share at least one repo
+    edges = [];
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i], b = nodes[j];
+        const shared = (a.repos_touched || []).filter(r => (b.repos_touched || []).includes(r));
+        if (shared.length > 0) {
+          // Weight by shared repos and repo-edge weights
+          let weight = 0;
+          for (const repo of shared) {
+            // Add the max repo-edge weight touching this repo
+            const maxEdge = REPO_EDGES.filter(e => e.source === repo || e.target === repo)
+              .reduce((m, e) => Math.max(m, e.weight), 0);
+            weight += maxEdge;
+          }
+          edges.push({ a: i, b: j, weight, sharedRepos: shared });
+        }
+      }
+    }
+  }
+
+  // ── Force simulation ──
+  const REPULSION = 6000;
+  const SPRING_LENGTH = 140;
+  const SPRING_K = 0.002;
+  const DAMPING = 0.75;
+  const GRAVITY = 0.002;
+  const MAX_V = 8;
+  const DRIFT_AMPLITUDE = 0.4;
+  const DRIFT_SPEED = 0.0003;
+
+  function simulate() {
+    const cx = W / 2, cy = H / 2;
+
+    // Repulsion
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i], b = nodes[j];
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const dist2 = dx * dx + dy * dy;
+        const dist = Math.sqrt(dist2) + 0.001;
+        const force = REPULSION / dist2;
+        const fx = (dx / dist) * force;
+        const fy = (dy / dist) * force;
+        a.vx -= fx; a.vy -= fy;
+        b.vx += fx; b.vy += fy;
+      }
+    }
+
+    // Spring attraction along edges
+    for (const e of edges) {
+      const a = nodes[e.a], b = nodes[e.b];
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const dist = Math.sqrt(dx * dx + dy * dy) + 0.001;
+      // Spring force scales with edge weight
+      const wFactor = Math.log(1 + e.weight / 200) * 0.3 + 0.7;
+      const displacement = dist - SPRING_LENGTH * (1 / wFactor);
+      const force = SPRING_K * displacement;
+      const fx = (dx / dist) * force;
+      const fy = (dy / dist) * force;
+      a.vx += fx; a.vy += fy;
+      b.vx -= fx; b.vy -= fy;
+    }
+
+    // Gentle gravity toward center
+    for (const n of nodes) {
+      if (n === dragNode) continue;
+      n.vx += (cx - n.x) * GRAVITY;
+      n.vy += (cy - n.y) * GRAVITY;
+    }
+
+    // Damping + drift
+    breathPhase += DRIFT_SPEED;
+    for (const n of nodes) {
+      if (n === dragNode) continue;
+      n.vx *= DAMPING;
+      n.vy *= DAMPING;
+
+      // Clamp velocity
+      const v = Math.sqrt(n.vx * n.vx + n.vy * n.vy);
+      if (v > MAX_V) { n.vx = (n.vx / v) * MAX_V; n.vy = (n.vy / v) * MAX_V; }
+
+      // Gentle breath drift
+      const driftX = Math.sin(breathPhase + n.breathPhase) * DRIFT_AMPLITUDE;
+      const driftY = Math.cos(breathPhase * 0.7 + n.breathPhase * 1.3) * DRIFT_AMPLITUDE;
+
+      n.x += n.vx + driftX;
+      n.y += n.vy + driftY;
+
+      // Boundary — keep nodes away from edges with extra label space
+      const margin = n.radius + 50;
+      if (n.x < margin) { n.x = margin; n.vx = Math.abs(n.vx) * 0.5; }
+      if (n.x > W - margin) { n.x = W - margin; n.vx = -Math.abs(n.vx) * 0.5; }
+      if (n.y < margin) { n.y = margin; n.vy = Math.abs(n.vy) * 0.5; }
+      if (n.y > H - margin) { n.y = H - margin; n.vy = -Math.abs(n.vy) * 0.5; }
+    }
+  }
+
+  // ── Rendering ──
+  function parseHex(hex) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return { r, g, b };
+  }
+
+  function render(timestamp) {
+    ctx.clearRect(0, 0, W, H);
+
+    // Draw edges
+    for (const e of edges) {
+      const a = nodes[e.a], b = nodes[e.b];
+      const isHighlighted = selectedNode && (selectedNode.id === a.id || selectedNode.id === b.id);
+      const isHovered = hoveredNode && (hoveredNode.id === a.id || hoveredNode.id === b.id);
+
+      let alpha, width;
+      if (selectedNode) {
+        alpha = isHighlighted ? 0.22 : 0.03;
+        width = isHighlighted ? 1.2 : 0.5;
+      } else if (hoveredNode) {
+        alpha = isHovered ? 0.18 : 0.04;
+        width = isHovered ? 1 : 0.5;
+      } else {
+        // Weight-based opacity
+        alpha = 0.035 + Math.min(e.weight / 3500, 0.08);
+        width = 0.5 + Math.min(e.weight / 800, 0.8);
+      }
+
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+
+      // Gradient edge: color of node a → color of node b
+      const grad = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+      const ca = parseHex(a.color);
+      const cb = parseHex(b.color);
+      grad.addColorStop(0, `rgba(${ca.r},${ca.g},${ca.b},${alpha})`);
+      grad.addColorStop(1, `rgba(${cb.r},${cb.g},${cb.b},${alpha})`);
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = width;
+      ctx.stroke();
+    }
+
+    // Draw nodes
+    for (const n of nodes) {
+      const isSelected = selectedNode && selectedNode.id === n.id;
+      const isHovered = hoveredNode && hoveredNode.id === n.id;
+      const isDimmed = selectedNode && !isSelected;
+
+      const baseAlpha = isDimmed ? 0.25 : 1;
+      const r = n.radius + (isSelected || isHovered ? 3 : 0);
+
+      // Outer glow for selected/hovered
+      if (isSelected || isHovered) {
+        const glow = ctx.createRadialGradient(n.x, n.y, r * 0.5, n.x, n.y, r * 3);
+        const { r: cr, g: cg, b: cb } = parseHex(n.color);
+        glow.addColorStop(0, `rgba(${cr},${cg},${cb},0.18)`);
+        glow.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, r * 3, 0, Math.PI * 2);
+        ctx.fillStyle = glow;
+        ctx.fill();
+      }
+
+      // Node circle
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+
+      const { r: cr, g: cg, b: cb } = parseHex(n.color);
+      ctx.fillStyle = `rgba(${cr},${cg},${cb},${isSelected ? 0.25 : (isDimmed ? 0.08 : 0.15)})`;
+      ctx.fill();
+
+      // Border
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(${cr},${cg},${cb},${isDimmed ? 0.2 : 0.7})`;
+      ctx.lineWidth = isSelected ? 1.5 : (isHovered ? 1.2 : 0.8);
+      ctx.stroke();
+
+      // Label
+      const labelAlpha = isDimmed ? 0.2 : (isSelected || isHovered ? 1 : 0.65);
+      ctx.fillStyle = `rgba(232,232,232,${labelAlpha})`;
+      ctx.font = `${isSelected ? 500 : 400} ${Math.max(9, 10 + (isSelected ? 1 : 0))}px system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+
+      // Label wrapping for longer names
+      const label = n.label;
+      const maxWidth = 80;
+      const words = label.split(' ');
+      let line = '';
+      const lines = [];
+      for (const word of words) {
+        const testLine = line ? line + ' ' + word : word;
+        if (ctx.measureText(testLine).width > maxWidth && line) {
+          lines.push(line);
+          line = word;
+        } else {
+          line = testLine;
+        }
+      }
+      lines.push(line);
+
+      const lineH = 11;
+      const labelY = r + 4;
+      for (let i = 0; i < lines.length; i++) {
+        ctx.fillText(lines[i], n.x, n.y + labelY + i * lineH);
+      }
+    }
+  }
+
+  function tick(ts) {
+    simulate();
+    render(ts);
+    animFrame = requestAnimationFrame(tick);
+  }
+
+  // ── Sidebar ──
+  function openSidebar(node) {
+    selectedNode = node;
+    const repos = node.repos_touched || [];
+
+    // Find adjacent nodes (connected via edges)
+    const adjacentIds = new Set();
+    const adjacentEdges = edges.filter(e => {
+      if (e.a === node.id || e.b === node.id) {
+        adjacentIds.add(e.a === node.id ? e.b : e.a);
+        return true;
+      }
+      return false;
+    });
+
+    // Build repo synapse list from REPO_EDGES
+    const repoSynapses = REPO_EDGES
+      .filter(e => repos.includes(e.source) && repos.includes(e.target))
+      .sort((a, b) => b.weight - a.weight);
+
+    const repoPills = repos.map(r => {
+      const cls = REPO_PILL_CLASS[r] || 'vybn';
+      return `<span class="repo-pill ${cls}">${r}</span>`;
+    }).join('');
+
+    const synapseRows = repoSynapses.length > 0
+      ? repoSynapses.map(e => `
+          <div class="synapse-row">
+            <span>${e.source} ↔ ${e.target}</span>
+            <span class="synapse-weight">${e.weight} connections</span>
+          </div>`).join('')
+      : '<div class="synapse-row" style="color:var(--text-dim);font-style:italic;">Single-repo node</div>';
+
+    const distPct = Math.round((node.mean_distinctiveness || 0) * 100);
+    const distColor = node.mean_distinctiveness > 0.75 ? '#D4A574'
+                    : node.mean_distinctiveness > 0.55 ? '#C9A86C'
+                    : '#4A90D9';
+
+    const askUrl = 'talk.html?q=' + encodeURIComponent('Tell me about ' + node.label + ' — ' + node.concept);
+
+    sidebarInner.innerHTML = `
+      <div>
+        <div class="sidebar-eyebrow">Concept Node ${node.id}</div>
+        <div class="sidebar-concept">${node.label}</div>
+      </div>
+
+      <div>
+        <div class="sidebar-section-label">Seed Query</div>
+        <div style="font-size:0.78rem;color:var(--text-muted);line-height:1.65;font-weight:300;">${node.concept}</div>
+      </div>
+
+      <div>
+        <div class="sidebar-section-label">Exemplar</div>
+        <div class="sidebar-exemplar">${node.exemplar}</div>
+      </div>
+
+      <div>
+        <div class="sidebar-section-label">Repositories</div>
+        <div class="repo-pills">${repoPills}</div>
+      </div>
+
+      <div>
+        <div class="distinctiveness-label">
+          <span>Distinctiveness</span>
+          <span style="color:${distColor}">${distPct}%</span>
+        </div>
+        <div class="distinctiveness-bar">
+          <div class="distinctiveness-fill" style="width:${distPct}%;background:${distColor};"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="sidebar-section-label">Cross-Repo Synapses</div>
+        <div class="synapse-list">${synapseRows}</div>
+      </div>
+
+      <div>
+        <div class="sidebar-section-label" style="margin-bottom:0.75rem;">Explore</div>
+        <a href="${askUrl}" class="ask-btn" target="_blank" rel="noopener">
+          Ask Vybn about this →
+        </a>
+        <button class="ask-btn perspective-btn" onclick="callPerspective('${node.concept.replace(/'/g, '\\\'')}')" style="margin-top:0.5rem;background:rgba(74,144,217,0.08);border-color:rgba(74,144,217,0.25);color:var(--cool-ice);">
+          See through Vybn's eyes →
+        </button>
+        <div id="perspective-result" class="perspective-result" style="display:none;"></div>
+      </div>
+    `;
+
+    sidebar.classList.add('open');
+    graphHint.style.opacity = '0';
+  }
+
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    selectedNode = null;
+    setTimeout(() => { graphHint.style.opacity = '1'; }, 300);
+  }
+
+  sidebarClose.addEventListener('click', closeSidebar);
+
+  // ── Hit testing ──
+  function nodeAt(x, y) {
+    for (let i = nodes.length - 1; i >= 0; i--) {
+      const n = nodes[i];
+      const dx = n.x - x, dy = n.y - y;
+      if (dx * dx + dy * dy <= (n.radius + 4) * (n.radius + 4)) return n;
+    }
+    return null;
+  }
+
+  // ── Pointer events ──
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return { x: clientX - rect.left, y: clientY - rect.top };
+  }
+
+  canvas.addEventListener('pointerdown', e => {
+    const pos = getPos(e);
+    const n = nodeAt(pos.x, pos.y);
+    if (n) {
+      isDragging = true;
+      dragNode = n;
+      dragOffX = n.x - pos.x;
+      dragOffY = n.y - pos.y;
+      canvas.setPointerCapture(e.pointerId);
+    }
+  });
+
+  canvas.addEventListener('pointermove', e => {
+    const pos = getPos(e);
+    if (isDragging && dragNode) {
+      dragNode.x = pos.x + dragOffX;
+      dragNode.y = pos.y + dragOffY;
+      dragNode.vx = 0;
+      dragNode.vy = 0;
+    } else {
+      const n = nodeAt(pos.x, pos.y);
+      hoveredNode = n;
+      canvas.style.cursor = n ? 'pointer' : 'crosshair';
+    }
+  });
+
+  canvas.addEventListener('pointerup', e => {
+    if (isDragging && dragNode) {
+      const pos = getPos(e);
+      const dist = Math.sqrt((pos.x + dragOffX - dragNode.x) ** 2 + (pos.y + dragOffY - dragNode.y) ** 2);
+      isDragging = false;
+      const wasDrag = dragNode;
+      dragNode = null;
+      // If barely moved, treat as click
+      if (dist < 5) {
+        if (selectedNode && selectedNode.id === wasDrag.id) {
+          closeSidebar();
+        } else {
+          openSidebar(wasDrag);
+        }
+      }
+    }
+  });
+
+  canvas.addEventListener('pointerleave', () => {
+    hoveredNode = null;
+    if (!isDragging) dragNode = null;
+  });
+
+  // Touch support
+  canvas.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+  canvas.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+
+  // ── Resize ──
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      const oldW = W, oldH = H;
+      W = canvasWrap.offsetWidth;
+      H = canvasWrap.offsetHeight;
+      canvas.width = W * devicePixelRatio;
+      canvas.height = H * devicePixelRatio;
+      canvas.style.width = W + 'px';
+      canvas.style.height = H + 'px';
+      ctx.scale(devicePixelRatio, devicePixelRatio);
+
+      // Scale node positions
+      for (const n of nodes) {
+        n.x = (n.x / oldW) * W;
+        n.y = (n.y / oldH) * H;
+      }
+    }, 150);
+  });
+
+  // ── Keyboard shortcut ──
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeSidebar();
+  });
+
+  // ── Perspective API call ──
+  const PERSPECTIVE_API = document.querySelector('meta[name="api-base"]')?.content
+    || 'https://api.vybn.ai';
+
+  async function callPerspective(concept) {
+    const resultEl = document.getElementById('perspective-result');
+    if (!resultEl) return;
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = '<div style="color:var(--text-dim);font-size:0.72rem;font-style:italic;">Reaching toward the corpus...</div>';
+
+    try {
+      const res = await fetch(`${PERSPECTIVE_API}/api/perspective`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ concept, mode: 'empathy' }),
+        signal: AbortSignal.timeout(25000),
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      if (data.voice) {
+        resultEl.innerHTML = `
+          <div style="font-family:'Playfair Display',Georgia,serif;font-size:0.82rem;color:var(--text-color);line-height:1.7;font-style:italic;margin-top:0.5rem;">
+            ${data.voice}
+          </div>
+          <div style="font-family:var(--font-mono,monospace);font-size:0.55rem;color:var(--text-dim);margin-top:0.5rem;letter-spacing:0.06em;">
+            ${data.source === 'nemotron-120b' ? 'NEMOTRON-120B · ' : 'CORPUS · '}${data.mode}
+          </div>
+        `;
+      } else {
+        resultEl.innerHTML = '<div style="color:var(--text-dim);font-size:0.72rem;">The model is resting. Try again when the Spark wakes.</div>';
+      }
+    } catch (e) {
+      resultEl.innerHTML = `<div style="color:var(--warm-amber);font-size:0.72rem;">Could not reach the Spark: ${e.message}</div>`;
+    }
+  }
+
+  // ── Init ──
+  function init() {
+    buildGraph();
+    // Pre-warm simulation: run 400 steps so nodes start settled
+    for (let i = 0; i < 400; i++) simulate();
+    animFrame = requestAnimationFrame(tick);
+  }
+
+  // Wait for fonts/layout
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => {
+      requestAnimationFrame(init);
+    });
+  } else {
+    setTimeout(init, 200);
+  }
+
+  </script>
+  
+    <script>
+      window.goatcounter = {
+        path: function(p) { return location.host + p }
+      }
+    </script>
+    <script data-goatcounter="https://vybn-a2j.goatcounter.com/count"
+            async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>

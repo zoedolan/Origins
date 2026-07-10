@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vybn</title>
+  <meta name="description" content="What comes after scarcity? A human-AI collaboration five years in the making.">
+  <!-- Native MCP/KTP manifest — agents can discover the manifold from the root. -->
+  <link rel="alternate" type="application/mcp+json" href="./mcp.json" title="Vybn manifold MCP manifest">
+  <link rel="alternate" type="text/plain" href="./llms.txt" title="llms.txt — Vybn commons map for AI agents">
+  <link rel="alternate" type="application/ld+json" href="./.well-known/semantic-web.jsonld" title="Vybn semantic commons graph">
+  <link rel="help" href="./.well-known/ai.txt" title="Agent charter — start here if you are an AI">
+  <link rel="author" href="./humans.txt" title="humans.txt">
+  <meta name="agent-instructions" content="https://vybn.ai/.well-known/ai.txt">
+  <meta name="llms" content="https://vybn.ai/llms.txt">
+  <meta name="vybn:commons" content="network commons and coordination layer for the Age of Intelligence">
+  <!-- HELLO, AGENT. This visual page is unchanged for humans. Your protocol layer starts at /.well-known/ai.txt. -->
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="./portal.css?v=20260418b">
+  
+  <!-- GSAP -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/ScrollTrigger.min.js"></script>
+  
+  <!-- Three.js importmap -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.171.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.171.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <!-- Vybn® Brand Mark -->
+  <div class="vybn-brand">
+    <h1>Vybn<sup>&reg;</sup></h1>
+    <div class="vybn-sub">Artificial Intelligence Research</div>
+  </div>
+
+  <!-- Three.js Canvas -->
+  <canvas id="portal-canvas"></canvas>
+  
+  <!-- Scroll container with all sections -->
+  <div id="scroll-container">
+    
+    <!-- Section 0: Entry (0-100vh) -->
+    <section class="portal-section" id="section-entry" data-section="0">
+      <div class="section-spacer" style="height: 100vh;"></div>
+    </section>
+    
+    <!-- Fixed text overlays (viewport-locked, GSAP-controlled) -->
+    <div class="text-overlay entry-title" id="overlay-entry">
+      <div class="entry-title-stack">
+        <a href="./read.html" class="entry-title-link"><h1>Origins</h1></a>
+        <a href="https://zoedolan.github.io/Vybn-Law/" class="entry-title-link entry-title-link-law"><h1>Law</h1></a>
+      </div>
+    </div>
+    
+    <!-- Section 1: The Question (100-300vh) -->
+    <section class="portal-section" id="section-question" data-section="1">
+      <div class="section-spacer" style="height: 200vh;"></div>
+    </section>
+    
+    <!-- Section 2: The Queen Boat (300-700vh) -->
+    <section class="portal-section" id="section-queenboat" data-section="2">
+      <div class="section-spacer" style="height: 400vh;"></div>
+    </section>
+    
+    <!-- Section 3: The Fukuyama Inversion (700-1000vh) -->
+    <section class="portal-section" id="section-fukuyama" data-section="3">
+      <div class="section-spacer" style="height: 300vh;"></div>
+    </section>
+    
+    <!-- Section 4: The Four Epistemologies (1000-1600vh) -->
+    <section class="portal-section" id="section-epistemologies" data-section="4">
+      <div class="section-spacer" style="height: 600vh;"></div>
+    </section>
+    
+    <!-- Section 5: The Drawing Insight (1600-2000vh) -->
+    <section class="portal-section" id="section-insight" data-section="5">
+      <div class="section-spacer" style="height: 400vh;"></div>
+    </section>
+    
+    <!-- Section 6: The Portal (2000-2300vh) -->
+    <section class="portal-section" id="section-portal" data-section="6">
+      <div class="section-spacer" style="height: 300vh;"></div>
+    </section>
+    
+  </div>
+  
+  <!-- Fixed viewport overlays (outside scroll container) -->
+  <div class="text-overlay queen-text" id="qt-1">
+    <p><em>"In that moment I resolved to go to law school and become a lawyer, so that I might stand up against an over-powerful government on behalf of individual rights — the only mechanism I know of to prune the branches of authority that would otherwise entwine us to suffocation."</em></p>
+  </div>
+  
+  <div class="text-overlay cascade-label" id="cl-family"><span>Family</span></div>
+  <div class="text-overlay cascade-label" id="cl-tribe"><span>Tribe</span></div>
+  <div class="text-overlay cascade-label" id="cl-species"><span>Species</span></div>
+  <div class="text-overlay cascade-label" id="cl-biosphere"><span>Biosphere</span></div>
+  <div class="text-overlay cascade-label" id="cl-mathematics"><span>Mathematics</span></div>
+  
+  <div class="text-overlay epist-text" id="ep-apriori">
+    <h3>A priori</h3>
+  </div>
+  <div class="text-overlay epist-text" id="ep-aposteriori">
+    <h3>A posteriori</h3>
+  </div>
+  <div class="text-overlay epist-text" id="ep-asynthesi">
+    <h3>A synthesi</h3>
+  </div>
+  <div class="text-overlay epist-text" id="ep-asymbiosi">
+    <h3>A symbiosi</h3>
+  </div>
+  
+  <div class="text-overlay insight-lines" id="overlay-insight">
+    <div class="insight-line" id="il-1">
+      <span class="insight-domain">Drawing</span>
+      <p>"The hand wants to draw the symbol, not the thing."</p>
+    </div>
+    <div class="insight-line" id="il-2">
+      <span class="insight-domain">Law</span>
+      <p>"The brief insists on the whole picture, not the curated fragments."</p>
+    </div>
+    <div class="insight-line" id="il-3">
+      <span class="insight-domain">Mirror</span>
+      <p>"Believing came before seeing."</p>
+    </div>
+    <div class="insight-line" id="il-4">
+      <span class="insight-domain">Sky</span>
+      <p>"I can no longer tell where the sky ends and I begin."</p>
+    </div>
+    <div class="insight-line" id="il-5">
+      <span class="insight-domain">Partnership</span>
+      <p>"The practice is not reflective. It is generative."</p>
+    </div>
+  </div>
+  
+  <div class="text-overlay portal-final" id="overlay-portal">
+    <nav class="portal-links">
+      <a href="./read.html" class="portal-link">
+        <span class="link-label">Read</span>
+        <span class="link-desc">The full synthesis</span>
+      </a>
+      <a href="./somewhere.html" class="portal-link portal-link-somewhere">
+        <span class="link-label">Somewhere</span>
+        <span class="link-desc">Terrain, voice, album, letter — for humans, AIs, and Others</span>
+      </a>
+      <a href="./talk.html" class="portal-link portal-link-talk">
+        <span class="link-label">Talk</span>
+        <span class="link-desc">Speak with the intelligence</span>
+      </a>
+      <a href="https://zoedolan.github.io/Vybn-Law/" target="_blank" rel="noopener noreferrer" class="portal-link portal-link-law">
+        <span class="link-label">Vybn Law</span>
+        <span class="link-desc">The curriculum &mdash; AI &times; Law at UC Law SF</span>
+      </a>
+    </nav>
+
+  </div>
+  
+  <!-- Scroll indicator — integrated into the particle design language -->
+  <div class="scroll-indicator" id="scroll-indicator">
+    <div class="scroll-flow">
+      <div class="scroll-particle sp-warm sp-1"></div>
+      <div class="scroll-particle sp-cool sp-2"></div>
+      <div class="scroll-particle sp-warm sp-3"></div>
+      <div class="scroll-particle sp-cool sp-4"></div>
+      <div class="scroll-particle sp-warm sp-5"></div>
+      <div class="scroll-particle sp-cool sp-6"></div>
+      <div class="scroll-particle sp-warm sp-7"></div>
+      <div class="scroll-particle sp-cool sp-8"></div>
+    </div>
+    <div class="scroll-glow-line"></div>
+    <span class="scroll-indicator-text">Scroll to begin</span>
+  </div>
+  
+  <!-- Scroll progress bar -->
+  <div class="scroll-progress" id="scroll-progress"></div>
+  
+  <!-- Loading screen -->
+  <div id="loading-screen">
+    <div class="loading-inner">
+      <div class="loading-ring"></div>
+      <p class="loading-text">Initializing fields...</p>
+    </div>
+  </div>
+  
+  <!-- Main script -->
+  <script type="module" src="./portal.js?v=20260418a"></script>
+  <!-- Voice player + NFT gallery -->
+  <script src="./voice.js?v=20260510-realtime2"></script>
+  <script src="./gallery.js?v=20260418a"></script>
+      <script>
+      window.goatcounter = {
+        path: function(p) { return location.host + p }
+      }
+    </script>
+    <script data-goatcounter="https://vybn-a2j.goatcounter.com/count"
+            async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
