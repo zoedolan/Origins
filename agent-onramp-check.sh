@@ -43,6 +43,6 @@ check_get mcp "$BASE/mcp.json"
 check_get sitemap "$BASE/sitemap.xml"
 check_get terrain "$API/api/manifold/points"
 check_get instant "$API/api/instant"
-check_post walk "$API/api/walk" '{"query":"agent onramp smoke","scope":"Origins"}'
+check_post walk "$API/api/walk" '{"query":"agent onramp smoke","scope":"all"}'
 
 exit "$FAIL"
