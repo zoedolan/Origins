@@ -220,7 +220,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: clamp(2.5rem, 2rem + 3vw, 5rem); /* ~ the font size itself */
+  gap: clamp(1.8rem, 1.4rem + 2.4vw, 3.6rem); /* ~ the font size itself */
 }
 
 .entry-title-link {
@@ -233,19 +233,11 @@ body {
 
 
 
-.entry-title-link:hover h1 {
-  color: var(--warm-gold);
-  text-shadow:
-    0 0 60px rgba(212, 165, 116, 0.3),
-    0 0 120px rgba(10, 10, 15, 0.8);
-}
+.entry-title-link:hover h1 { color: var(--warm-gold); text-shadow: 0 0 60px rgba(212,165,116,.3), 0 0 120px rgba(10,10,15,.8); }
 
-.entry-title-link-law:hover h1 {
-  color: var(--cool-blue);
-  text-shadow:
-    0 0 60px rgba(74, 144, 217, 0.3),
-    0 0 120px rgba(10, 10, 15, 0.8);
-}
+.entry-title-link-law:hover h1 { color: var(--cool-blue); text-shadow: 0 0 60px rgba(74,144,217,.3), 0 0 120px rgba(10,10,15,.8); }
+.entry-title-link-sc:hover h1 { color: var(--interference); text-shadow: 0 0 60px rgba(201,168,108,.35), 0 0 120px rgba(10,10,15,.8); }
+.entry-title-link .entry-subtitle { display: block; text-align: center; margin-bottom: .55rem; }
 
 /* Dual-track breath: hovering one gently dims the other */
 .entry-title-stack:hover .entry-title-link h1 {
@@ -258,7 +250,7 @@ body {
 
 .entry-title h1 {
   font-family: var(--font-serif);
-  font-size: clamp(2.5rem, 2rem + 3vw, 5rem);
+  font-size: clamp(2rem, 1.6rem + 2.4vw, 4rem);
   font-weight: 600;
   letter-spacing: 0.04em;
   color: var(--text-color);
