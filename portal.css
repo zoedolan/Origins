@@ -237,6 +237,7 @@ body {
 
 .entry-title-link-law:hover h1 { color: var(--cool-blue); text-shadow: 0 0 60px rgba(74,144,217,.3), 0 0 120px rgba(10,10,15,.8); }
 .entry-title-link-sc:hover h1 { color: var(--interference); text-shadow: 0 0 60px rgba(201,168,108,.35), 0 0 120px rgba(10,10,15,.8); }
+.entry-title-link-right:hover h1 { color: var(--cool-ice); text-shadow: 0 0 60px rgba(168,200,232,.35), 0 0 120px rgba(10,10,15,.8); }
 .entry-title-link .entry-subtitle { display: block; text-align: center; margin-bottom: .55rem; }
 
 /* Dual-track breath: hovering one gently dims the other */
