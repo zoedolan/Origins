@@ -9,9 +9,62 @@
 
 const GALLERY = {
   total: 139,
-  metaBase: 'https://ipfs.io/ipfs/bafybeihblxz6zsdj7jvktuaqiznty2pye22qa6tc5z26sohij4vrvd32km',
-  imgBase: 'https://ipfs.io/ipfs/bafybeie7ymjq5i7jzlpxxf64qvssziqihkuq6hrakgyglqgeyd6f32i3bq',
+  metaCid: 'bafybeihblxz6zsdj7jvktuaqiznty2pye22qa6tc5z26sohij4vrvd32km',
+  imgCid: 'bafybeie7ymjq5i7jzlpxxf64qvssziqihkuq6hrakgyglqgeyd6f32i3bq',
 };
+
+// Public IPFS gateways can throttle or disappear independently. Try more than one
+// so the on-chain collection does not vanish from vybn.ai with a single outage.
+const IPFS_GATEWAYS = [
+  'https://gateway.pinata.cloud/ipfs',
+  'https://dweb.link/ipfs',
+  'https://ipfs.io/ipfs',
+];
+const IPFS_TIMEOUT_MS = 8000;
+
+function ipfsUrls(cid, path) {
+  return IPFS_GATEWAYS.map(gateway => `${gateway}/${cid}/${path}`);
+}
+
+function loadIpfsImage(target, cid, path, onLoad) {
+  const generation = (target._ipfsGeneration || 0) + 1;
+  target._ipfsGeneration = generation;
+  const urls = ipfsUrls(cid, path);
+
+  function tryGateway(index) {
+    if (target._ipfsGeneration !== generation) return;
+    if (index >= urls.length) {
+      console.warn(`[gallery] Image unavailable after ${urls.length} gateways: #${path}`);
+      return;
+    }
+
+    const url = urls[index];
+    const probe = new Image();
+    let settled = false;
+    const timer = setTimeout(() => finish(false), IPFS_TIMEOUT_MS);
+
+    function finish(ok) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      probe.onload = null;
+      probe.onerror = null;
+      if (target._ipfsGeneration !== generation) return;
+      if (ok) {
+        target.src = url;
+        onLoad();
+      } else {
+        tryGateway(index + 1);
+      }
+    }
+
+    probe.onload = () => finish(true);
+    probe.onerror = () => finish(false);
+    probe.src = url;
+  }
+
+  tryGateway(0);
+}
 
 const metaCache = new Map();
 const SLOT_COUNT = 3;
@@ -208,18 +261,19 @@ function fillSlots(base) {
   slotEls.forEach((s, i) => {
     const id = currentBase + i;
     if (id > GALLERY.total) { s.slot.classList.remove('visible'); return; }
-    const src = `${GALLERY.imgBase}/${id}`;
-    if (s.img.getAttribute('src') === src) return;
+    if (s.img.dataset.assetId === String(id)) return;
     s.slot.classList.remove('visible');
     // If this slot was expanded, collapse it during image swap
     if (expandedSlot === s.slot) collapseExpandedSlot(false);
-    s.img.src = src;
+    s.img.dataset.assetId = String(id);
     s.img.alt = `A-Iconoclast #${id}`;
     s.num.textContent = `#${id}`;
     s.slot.dataset.tokenId = id;
     const cached = metaCache.get(id);
     s.title.textContent = cached?.name || '';
-    setTimeout(() => s.slot.classList.add('visible'), 80 + i * 150);
+    loadIpfsImage(s.img, GALLERY.imgCid, id, () => {
+      setTimeout(() => s.slot.classList.add('visible'), 80 + i * 150);
+    });
   });
 }
 
@@ -276,17 +330,25 @@ async function onClickSlot(slot) {
 
 async function fetchMeta(id) {
   if (metaCache.has(id)) return metaCache.get(id);
-  const url = `${GALLERY.metaBase}/${id}.json`;
-  try {
-    const r = await fetch(url, { signal: AbortSignal.timeout(12000) });
-    if (!r.ok) return null;
-    const d = await r.json();
-    metaCache.set(id, d);
-    return d;
-  } catch (e) {
-    console.warn(`[gallery] Metadata error #${id}:`, e.message);
-    return null;
+
+  for (const url of ipfsUrls(GALLERY.metaCid, `${id}.json`)) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), IPFS_TIMEOUT_MS);
+    try {
+      const r = await fetch(url, { signal: controller.signal });
+      if (!r.ok) continue;
+      const d = await r.json();
+      metaCache.set(id, d);
+      return d;
+    } catch (e) {
+      console.warn(`[gallery] Metadata gateway failed for #${id}:`, e.message);
+    } finally {
+      clearTimeout(timer);
+    }
   }
+
+  console.warn(`[gallery] Metadata unavailable after ${IPFS_GATEWAYS.length} gateways: #${id}`);
+  return null;
 }
 
 // ── Viewport-aware hover scale (desktop only) ───────────────────
