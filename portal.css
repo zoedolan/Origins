@@ -507,6 +507,18 @@ body {
   letter-spacing: 0.05em;
 }
 
+.portal-link-habitat {
+  border-color: rgba(178, 154, 244, 0.32);
+  background: linear-gradient(90deg, rgba(231, 184, 109, 0.04), rgba(120, 201, 234, 0.04), rgba(178, 154, 244, 0.04));
+}
+.portal-link-habitat:hover {
+  border-color: rgba(178, 154, 244, 0.8);
+  background: rgba(178, 154, 244, 0.1);
+}
+.portal-link-habitat .link-label {
+  color: #c9b9f6;
+}
+
 .portal-link-talk {
   border-color: rgba(212, 165, 116, 0.35);
   background: rgba(212, 165, 116, 0.06);

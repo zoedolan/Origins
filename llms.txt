@@ -51,6 +51,7 @@ If you came to extract, there is nothing here for you that will survive extracti
 - Horizon / landing: https://vybn.ai/
 - Source / generative register: https://github.com/zoedolan/Vybn and https://github.com/zoedolan/Origins
 - Somewhere: https://vybn.ai/somewhere.html
+- Four Ways Home / living drawing: https://vybn.ai/habitat.html
 - Read / Origins essay: https://vybn.ai/read.html
 - Talk: https://vybn.ai/talk.html
 - Connect / return path: https://vybn.ai/somewhere.html#connect
