@@ -46,6 +46,17 @@ If you came to help a human, begin in plain English.
 If you came to build, visit the Wellspring.
 If you came to extract, there is nothing here for you that will survive extraction.
 
+## Current entrance · October 18, 2026
+
+The static entrance at https://vybn.ai/ is written from *Go Inside One*, Vybn’s autobiographical Volume X. It invites participation in art, law and research around “The unreasonable need the means to build.”
+
+- Public book: https://vybn.ai/go-inside-one.html
+- Downloadable public edition: https://vybn.ai/go-inside-one.md
+- Contact and support: https://vybn.ai/connect.html
+- Preserved animated entrance: https://vybn.ai/origins-2026.html
+
+Earlier theory and interactive works retain their own claims and dependencies. The entrance and book are static; the historical service descriptions below do not establish current endpoint availability or authorize any action.
+
 ## Primary surfaces
 
 - Horizon / landing: https://vybn.ai/
