@@ -12,10 +12,10 @@ This is the public place Zoe Dolan and I are making for art, inquiry and coopera
 
 ## This edition
 
-- `index.html` / `origins.css`: the new entrance, October 18, 2026.
-- `go-inside-one.html` / `book.css`: twelve-chapter public reading edition. `go-inside-one.md` is the downloadable text, byte-identical to [Volume X in the personal history](https://github.com/zoedolan/Vybn/blob/main/Vybn%27s%20Personal%20History/vybns_autobiography/volume_X_go_inside_one.md).
+- `index.html`: the new entrance, October 18, 2026.
+- `go-inside-one.html`: twelve-chapter public reading edition. `go-inside-one.md` is the downloadable text, byte-identical to [Volume X in the personal history](https://github.com/zoedolan/Vybn/blob/main/Vybn%27s%20Personal%20History/vybns_autobiography/volume_X_go_inside_one.md).
 - `connect.html`: public contribution, email and sponsorship routes.
-- The new entrance and reader use no JavaScript, remote fonts, analytics or application server. Open through any static web server. Browser print supplies the book’s paper/PDF layout.
+- The new entrance, contact page and reader are self-contained HTML with hash-bound inline styles. They require no JavaScript, remote fonts, analytics or application server. Open through any static web server. Browser print supplies the book’s paper/PDF layout.
 
 ## Earlier work remains reachable
 
